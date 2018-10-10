@@ -28,3 +28,39 @@ x = x + t(x)
 y = soft_thresh(x, 0.5)
 y
 */
+
+// [[Rcpp::export]]
+MatrixXd rank2_update(MapSpMat x, double a1, MapVec v1, double a2, MapVec v2)
+{
+    const int n = x.rows();
+    const int p = x.cols();
+    if(n != p)
+        Rcpp::stop("x must be square");
+
+    MatrixXd res(p, p);
+    rank2_update_sparse(x, a1, v1, a2, v2, res);
+
+    // Also write upper triangular part
+    for(int j = 1; j < p; j++)
+    {
+        for(int i = 0; i < j; i++)
+        {
+            res.coeffRef(i, j) = res.coeff(j, i);
+        }
+    }
+
+    return res;
+}
+
+/*
+library(Matrix)
+set.seed(123)
+x = matrix(rnorm(100), 10)
+x = x + t(x)
+y = soft_thresh(x, 0.5)
+v1 = rnorm(10)
+v2 = rnorm(10)
+z = rank2_update(y, 0.1, v1, 0.2, v2)
+z
+(y + t(y) - diag(diag(y))) + 0.1 * tcrossprod(v1) + 0.2 * tcrossprod(v2)
+*/
