@@ -1,0 +1,13 @@
+Package: fastfps
+Type: Package
+Title: Fast Fantope Projection and Selection
+Version: 0.1.0
+Author: Yixuan Qiu
+Maintainer: Yixuan Qiu <yixuanq@gmail.com>
+Description: Fast implementation of the Fantope projection and selection
+    algorithm for sparse principal component analysis.
+License: GPL
+Encoding: UTF-8
+LazyData: true
+Imports: Rcpp (>= 0.12.19)
+LinkingTo: Rcpp, RcppEigen, RSpectra
