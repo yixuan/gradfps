@@ -61,7 +61,8 @@ List fastfps(NumericMatrix S, int d, double lambda, int maxiter,
     double alpha = 0.0;
     for(int i = 0; i < maxiter; i++)
     {
-        alpha = alpha0 / i;
+        Rcpp::Rcout << i << std::endl;
+        alpha = alpha0 / (i + 1.0);
 
         // L1 thresholding
         soft_thresh_sparse(x, lambda * alpha, xsp);
