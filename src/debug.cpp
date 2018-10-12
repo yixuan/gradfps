@@ -30,14 +30,15 @@ y
 */
 
 // [[Rcpp::export]]
-MatrixXd rank2_update(MapSpMat x, double a1, MapVec v1, double a2, MapVec v2)
+NumericMatrix rank2_update(MapSpMat x, double a1, MapVec v1, double a2, MapVec v2)
 {
     const int n = x.rows();
     const int p = x.cols();
     if(n != p)
         Rcpp::stop("x must be square");
 
-    MatrixXd res(p, p);
+    NumericMatrix xnew(p, p);
+    MapMat res(xnew.begin(), p, p);
     rank2_update_sparse(x, a1, v1, a2, v2, res);
 
     // Also write upper triangular part
@@ -49,7 +50,7 @@ MatrixXd rank2_update(MapSpMat x, double a1, MapVec v1, double a2, MapVec v2)
         }
     }
 
-    return res;
+    return xnew;
 }
 
 /*

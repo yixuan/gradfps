@@ -7,11 +7,13 @@ typedef Eigen::MatrixXd MatrixXd;
 typedef Eigen::VectorXd VectorXd;
 typedef Eigen::Map<MatrixXd> MapMat;
 typedef Eigen::Map<VectorXd> MapVec;
+typedef Eigen::Ref<VectorXd> RefVec;
 typedef Eigen::SparseMatrix<double> SpMat;
 typedef Eigen::Map<SpMat> MapSpMat;
 
 // Apply the soft-thresholding operator on a symmetrix matrix x,
-// and return a sparse matrix.
+// and return a sparse matrix. Only the lower triangular part of x
+// is referenced.
 //
 // NOTE: the returned sparse matrix is not compressed, and only the lower
 //       triangular part contains values.
@@ -39,12 +41,13 @@ inline void soft_thresh_sparse(
     }
 }
 
-// Apply a rank-2 update on a sparse matrix x
+// Apply a rank-2 update on a sparse matrix x.
+// Only the lower triangular part is referenced.
 // res <- x + a1 * v1 * v1' + a2 * v2 * v2'
 //
 // NOTE: only the lower triagular part is written.
 inline void rank2_update_sparse(
-    const SpMat& x, double a1, const MapVec& v1, double a2, const MapVec& v2, MatrixXd& res
+    const SpMat& x, double a1, const RefVec& v1, double a2, const RefVec& v2, MapMat& res
 )
 {
     const int p = x.rows();
