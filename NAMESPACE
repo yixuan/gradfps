@@ -1,3 +1,4 @@
-exportPattern("^[[:alpha:]]+")
 importFrom(Rcpp, evalCpp)
 useDynLib(fastfps, .registration = TRUE)
+
+export(soft_thresh, rank2_update, fastfps)
