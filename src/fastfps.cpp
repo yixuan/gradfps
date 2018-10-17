@@ -1,6 +1,7 @@
 #include "fastfps.h"
 #include <Spectra/SymEigsSolver.h>
 #include <Spectra/MatOp/SparseSymMatProd.h>
+#include "walltime.h"
 
 using Rcpp::NumericMatrix;
 using Rcpp::List;
@@ -35,7 +36,7 @@ inline double lambda_min_thresh(double x, double thresh)
 
 // [[Rcpp::export]]
 List fastfps(NumericMatrix S, int d, double lambda, int maxiter,
-             double alpha0, double mu, double r)
+             double alpha0, double mu, double r, bool feas = false)
 {
     const int n = S.nrow();
     const int p = S.ncol();
@@ -46,7 +47,11 @@ List fastfps(NumericMatrix S, int d, double lambda, int maxiter,
     NumericMatrix res(p, p);
     MapMat x(res.begin(), p, p);
     SpMat xsp(p, p);
-    std::vector<double> objfn;
+
+    std::vector<double> fn_obj, fn_feas, time;
+    fn_obj.reserve(maxiter);
+    fn_feas.reserve(maxiter);
+    time.reserve(maxiter);
 
     // Initial guess -- using partial eigen decomposition
     initial_guess(Smat, d, x);
@@ -59,9 +64,12 @@ List fastfps(NumericMatrix S, int d, double lambda, int maxiter,
     VectorXd diag(p);
 
     double alpha = 0.0;
+    double time1, time2;
     for(int i = 0; i < maxiter; i++)
     {
         Rcpp::Rcout << i << std::endl;
+
+        time1 = get_wall_time();
         alpha = alpha0 / (i + 1.0);
 
         // L1 thresholding
@@ -99,7 +107,9 @@ List fastfps(NumericMatrix S, int d, double lambda, int maxiter,
             x /= (xnorm / radius);
         }
 
-        objfn.push_back(-Smat.cwiseProduct(x).sum() + lambda * x.cwiseAbs().sum());
+        time2 = get_wall_time();
+        fn_obj.push_back(-Smat.cwiseProduct(x).sum() + lambda * x.cwiseAbs().sum());
+        time.push_back(time2 - time1);
     }
 
     soft_thresh_sparse(x, lambda * alpha, xsp);
@@ -107,6 +117,7 @@ List fastfps(NumericMatrix S, int d, double lambda, int maxiter,
 
     return List::create(
         Rcpp::Named("projection") = xsp,
-        Rcpp::Named("objfn") = objfn
+        Rcpp::Named("objfn") = fn_obj,
+        Rcpp::Named("time") = time
     );
 }
