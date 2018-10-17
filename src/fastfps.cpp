@@ -48,10 +48,7 @@ List fastfps(NumericMatrix S, int d, double lambda, int maxiter,
     MapMat x(res.begin(), p, p);
     SpMat xsp(p, p);
 
-    std::vector<double> fn_obj, fn_feas, time;
-    fn_obj.reserve(maxiter);
-    fn_feas.reserve(maxiter);
-    time.reserve(maxiter);
+    std::vector<double> fn_obj, fn_feas, fn_feas1, fn_feas2, time;
 
     // Initial guess -- using partial eigen decomposition
     initial_guess(Smat, d, x);
@@ -63,6 +60,9 @@ List fastfps(NumericMatrix S, int d, double lambda, int maxiter,
     MatrixXd evecs(p, 2);
     VectorXd diag(p);
 
+    DenseSymMatProd<double> op_feas(x);
+    SymEigsSolver< double, BOTH_ENDS, DenseSymMatProd<double> > eigs_feas(&op_feas, 2, 10);
+
     double alpha = 0.0;
     double time1, time2;
     for(int i = 0; i < maxiter; i++)
@@ -70,7 +70,7 @@ List fastfps(NumericMatrix S, int d, double lambda, int maxiter,
         Rcpp::Rcout << i << std::endl;
 
         time1 = get_wall_time();
-        alpha = alpha0 / (i + 1.0);
+        alpha = alpha0 / std::pow(i + 1.0, 0.75);
 
         // L1 thresholding
         soft_thresh_sparse(x, lambda * alpha, xsp);
@@ -110,6 +110,21 @@ List fastfps(NumericMatrix S, int d, double lambda, int maxiter,
         time2 = get_wall_time();
         fn_obj.push_back(-Smat.cwiseProduct(x).sum() + lambda * x.cwiseAbs().sum());
         time.push_back(time2 - time1);
+
+        if(feas)
+        {
+            eigs_feas.init();
+            eigs_feas.compute(1000, 1e-6);
+            evals.noalias() = eigs_feas.eigenvalues();
+            const double feas1 = mu * r * (std::max(0.0, -evals[1]),
+                                           std::max(0.0, evals[0] - 1.0));
+            const double tbar = x.diagonal().mean();
+            const double tr_shift = double(d) / double(p) - tbar;
+            const double feas2 = mu * std::sqrt(double(p)) * std::abs(tr_shift);
+            fn_feas1.push_back(feas1);
+            fn_feas2.push_back(feas2);
+            fn_feas.push_back(feas1 + feas2);
+        }
     }
 
     soft_thresh_sparse(x, lambda * alpha, xsp);
@@ -117,7 +132,10 @@ List fastfps(NumericMatrix S, int d, double lambda, int maxiter,
 
     return List::create(
         Rcpp::Named("projection") = xsp,
-        Rcpp::Named("objfn") = fn_obj,
-        Rcpp::Named("time") = time
+        Rcpp::Named("objfn")      = fn_obj,
+        Rcpp::Named("feasfn1")    = fn_feas1,
+        Rcpp::Named("feasfn2")    = fn_feas2,
+        Rcpp::Named("feasfn")     = fn_feas,
+        Rcpp::Named("time")       = time
     );
 }
