@@ -9,7 +9,7 @@ using Rcpp::List;
 using namespace Spectra;
 
 // Initial guess using partial eigen decomposition
-inline void initial_guess(const MapMat& S, int d, MapMat& x)
+inline void initial_guess(const MapMat& S, int d, MatrixXd& x)
 {
     const int ncv = std::max(10, 2 * d + 1);
     DenseSymMatProd<double> op(S);
@@ -44,9 +44,7 @@ List fastfps(NumericMatrix S, int d, double lambda, int maxiter,
         Rcpp::stop("S must be square");
 
     MapMat Smat(S.begin(), p, p);
-    NumericMatrix res(p, p);
-    MapMat x(res.begin(), p, p);
-    MatrixXd xold(p, p);
+    MatrixXd x(p, p), xold(p, p);
     SpMat xsp(p, p);
 
     std::vector<double> fn_obj, fn_feas, fn_feas1, fn_feas2, time;

@@ -17,8 +17,9 @@ typedef Eigen::Map<SpMat> MapSpMat;
 //
 // NOTE: the returned sparse matrix is not compressed, and only the lower
 //       triangular part contains values.
+template <typename MatType>
 inline void soft_thresh_sparse(
-    const MapMat& x, double lambda, SpMat& res
+    const MatType& x, double lambda, SpMat& res
 )
 {
     const int p = x.rows();
@@ -46,8 +47,9 @@ inline void soft_thresh_sparse(
 // res <- x + a1 * v1 * v1' + a2 * v2 * v2'
 //
 // NOTE: only the lower triagular part is written.
+template <typename MatType>
 inline void rank2_update_sparse(
-    const SpMat& x, double a1, const RefVec& v1, double a2, const RefVec& v2, MapMat& res
+    const SpMat& x, double a1, const RefVec& v1, double a2, const RefVec& v2, MatType& res
 )
 {
     const int p = x.rows();
@@ -60,13 +62,11 @@ inline void rank2_update_sparse(
 
     const double eps = 1e-6;
 
-    // If both a1 and a2 are zero, simply convert x to a dense matrix
+    // If both a1 and a2 are zero, simply add x to a zero matrix
     if(a1_abs <= eps && a2_abs <= eps)
     {
-        res.noalias() = MatrixXd(x);
-        return;
+        res.setZero();
     }
-
     // a1 == 0, a2 != 0
     if(a1_abs <= eps && a2_abs > eps)
     {
