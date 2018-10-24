@@ -46,6 +46,7 @@ List fastfps(NumericMatrix S, int d, double lambda, int maxiter,
     MapMat Smat(S.begin(), p, p);
     NumericMatrix res(p, p);
     MapMat x(res.begin(), p, p);
+    MatrixXd xold(p, p);
     SpMat xsp(p, p);
 
     std::vector<double> fn_obj, fn_feas, fn_feas1, fn_feas2, time;
@@ -99,13 +100,19 @@ List fastfps(NumericMatrix S, int d, double lambda, int maxiter,
 
         // Gradient descent
         x.triangularView<Eigen::Upper>() = x.triangularView<Eigen::Lower>().transpose();
-        x.noalias() += alpha * Smat;
+        if(i >= 2)
+        {
+            x.noalias() += (double(i - 1.0) / double(i + 2.0)) * (x - xold) + alpha * Smat;
+        } else {
+            x.noalias() += alpha * Smat;
+        }
         const double xnorm = x.norm();
         const double radius = std::sqrt(double(d));
         if(xnorm > radius)
         {
             x /= (xnorm / radius);
         }
+        xold.noalias() = x;
 
         time2 = get_wall_time();
         fn_obj.push_back(-Smat.cwiseProduct(x).sum() + lambda * x.cwiseAbs().sum());
