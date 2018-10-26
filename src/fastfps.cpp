@@ -36,7 +36,8 @@ inline double lambda_min_thresh(double x, double thresh)
 
 // [[Rcpp::export]]
 List fastfps(NumericMatrix S, int d, double lambda, int maxiter,
-             double alpha0, double mu, double r, bool feas = false)
+             double alpha0, double mu, double r,
+             bool exact_feas = false, bool verbose = true)
 {
     const int n = S.nrow();
     const int p = S.ncol();
@@ -66,8 +67,6 @@ List fastfps(NumericMatrix S, int d, double lambda, int maxiter,
     double time1, time2;
     for(int i = 0; i < maxiter; i++)
     {
-        Rcpp::Rcout << i << std::endl;
-
         time1 = get_wall_time();
         alpha = alpha0 / std::pow(i + 1.0, 0.75);
 
@@ -87,6 +86,17 @@ List fastfps(NumericMatrix S, int d, double lambda, int maxiter,
         // Trace shrinkage
         const double tbar = x.diagonal().mean();
         const double tr_shift = double(d) / double(p) - tbar;
+
+        // Compute (approximate) feasibility loss
+        const double feas1 = mu * r * (std::max(0.0, -evals[1]),
+                                       std::max(0.0, evals[0] - 1.0));
+        const double feas2 = mu * std::sqrt(double(p)) * std::abs(tr_shift);
+        fn_feas1.push_back(feas1);
+        fn_feas2.push_back(feas2);
+        fn_feas.push_back(feas1 + feas2);
+        if(verbose)
+            Rcpp::Rcout << i << std::endl;
+
         diag.array() = x.diagonal().array() + tr_shift;
         const double beta = alpha * mu / std::sqrt(double(p)) / std::abs(tr_shift);
         if(beta >= 1.0)
@@ -116,7 +126,7 @@ List fastfps(NumericMatrix S, int d, double lambda, int maxiter,
         fn_obj.push_back(-Smat.cwiseProduct(x).sum() + lambda * x.cwiseAbs().sum());
         time.push_back(time2 - time1);
 
-        if(feas)
+        if(exact_feas)
         {
             eigs_feas.init();
             eigs_feas.compute(1000, 1e-6);
@@ -126,9 +136,9 @@ List fastfps(NumericMatrix S, int d, double lambda, int maxiter,
             const double tbar = x.diagonal().mean();
             const double tr_shift = double(d) / double(p) - tbar;
             const double feas2 = mu * std::sqrt(double(p)) * std::abs(tr_shift);
-            fn_feas1.push_back(feas1);
-            fn_feas2.push_back(feas2);
-            fn_feas.push_back(feas1 + feas2);
+            fn_feas1.back() = feas1;
+            fn_feas2.back() = feas2;
+            fn_feas.back() = feas1 + feas2;
         }
     }
 
