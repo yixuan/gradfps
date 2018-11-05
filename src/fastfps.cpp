@@ -1,24 +1,8 @@
 #include "fastfps.h"
-#include <Spectra/SymEigsSolver.h>
-#include <Spectra/MatOp/SparseSymMatProd.h>
 #include "walltime.h"
 
 using Rcpp::NumericMatrix;
 using Rcpp::List;
-
-using namespace Spectra;
-
-// Initial guess using partial eigen decomposition
-inline void initial_guess(const MapMat& S, int d, MatrixXd& x)
-{
-    const int ncv = std::max(10, 2 * d + 1);
-    DenseSymMatProd<double> op(S);
-    SymEigsSolver< double, LARGEST_ALGE, DenseSymMatProd<double> > eigs(&op, d, ncv);
-    eigs.init();
-    eigs.compute(1000, 0.001);
-    MatrixXd evecs = eigs.eigenvectors();
-    x.noalias() = evecs * evecs.transpose();
-}
 
 // [[Rcpp::export]]
 List fastfps(NumericMatrix S, int d, double lambda,
@@ -41,14 +25,9 @@ List fastfps(NumericMatrix S, int d, double lambda,
     initial_guess(Smat, d, x);
 
     // Eigenvalue computation
-    SparseSymMatProd<double> op(xsp);
-    SymEigsSolver< double, BOTH_ENDS, SparseSymMatProd<double> > eigs(&op, 2, 10);
     VectorXd evals(2);
     MatrixXd evecs(p, 2);
     VectorXd diag(p);
-
-    DenseSymMatProd<double> op_feas(x);
-    SymEigsSolver< double, BOTH_ENDS, DenseSymMatProd<double> > eigs_feas(&op_feas, 2, 10);
 
     double alpha = 0.0;
     double time1, time2;
@@ -61,11 +40,7 @@ List fastfps(NumericMatrix S, int d, double lambda,
         soft_thresh_sparse(x, lambda * alpha, xsp);
 
         // Eigenvalue shrinkage
-        eigs.init();
-        eigs.compute(1000, 1e-6);
-        evals.noalias() = eigs.eigenvalues();
-        evecs.noalias() = eigs.eigenvectors();
-
+        eigs_sparse_both_ends_spectra(xsp, evals, evecs);
         const double lmax_new = lambda_max_thresh(evals[0], alpha * mu * r);
         const double lmin_new = lambda_min_thresh(evals[1], alpha * mu * r);
         rank2_update_sparse(xsp, lmax_new - evals[0], evecs.col(0), lmin_new - evals[1], evecs.col(1), x);
@@ -116,9 +91,7 @@ List fastfps(NumericMatrix S, int d, double lambda,
         // Compute exact feasibility loss
         if(exact_feas)
         {
-            eigs_feas.init();
-            eigs_feas.compute(1000, 1e-6);
-            evals.noalias() = eigs_feas.eigenvalues();
+            eigs_dense_both_ends_spectra(x, evals);
             const double feas1 = mu * r * (std::max(0.0, -evals[1]),
                                            std::max(0.0, evals[0] - 1.0));
             const double tbar = x.diagonal().mean();

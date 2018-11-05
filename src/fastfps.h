@@ -2,6 +2,14 @@
 #define FASTFPS_FASTFPS_H
 
 #include "common.h"
+#include "eigenvalue.h"
+
+// Initial guess using partial eigen decomposition
+inline void initial_guess(const MapMat& S, int d, MatrixXd& x)
+{
+    MatrixXd evecs = eigs_dense_largest_spectra(S, d);
+    x.noalias() = evecs * evecs.transpose();
+}
 
 // Thresholding of eigenvalues
 inline double lambda_max_thresh(double x, double thresh)
