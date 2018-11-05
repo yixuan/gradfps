@@ -1,15 +1,21 @@
-#ifndef FASTFPS_H
-#define FASTFPS_H
+#ifndef FASTFPS_FASTFPS_H
+#define FASTFPS_FASTFPS_H
 
-#include <RcppEigen.h>
+#include "common.h"
 
-typedef Eigen::MatrixXd MatrixXd;
-typedef Eigen::VectorXd VectorXd;
-typedef Eigen::Map<MatrixXd> MapMat;
-typedef Eigen::Map<VectorXd> MapVec;
-typedef Eigen::Ref<VectorXd> RefVec;
-typedef Eigen::SparseMatrix<double> SpMat;
-typedef Eigen::Map<SpMat> MapSpMat;
+// Thresholding of eigenvalues
+inline double lambda_max_thresh(double x, double thresh)
+{
+    return (x > 1.0 + thresh) ?
+    (x - thresh) :
+    ((x > 1.0) ? 1.0 : x);
+}
+inline double lambda_min_thresh(double x, double thresh)
+{
+    return (x > 0.0) ?
+    (x) :
+    ((x > -thresh) ? 0.0 : (x + thresh));
+}
 
 // Apply the soft-thresholding operator on a symmetrix matrix x,
 // and return a sparse matrix. Only the lower triangular part of x
@@ -117,4 +123,4 @@ inline void rank2_update_sparse(
 }
 
 
-#endif  // FASTFPS_H
+#endif  // FASTFPS_FASTFPS_H

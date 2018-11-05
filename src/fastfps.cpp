@@ -20,20 +20,6 @@ inline void initial_guess(const MapMat& S, int d, MatrixXd& x)
     x.noalias() = evecs * evecs.transpose();
 }
 
-// Thresholding of eigenvalues
-inline double lambda_max_thresh(double x, double thresh)
-{
-    return (x > 1.0 + thresh) ?
-           (x - thresh) :
-           ((x > 1.0) ? 1.0 : x);
-}
-inline double lambda_min_thresh(double x, double thresh)
-{
-    return (x > 0.0) ?
-           (x) :
-           ((x > -thresh) ? 0.0 : (x + thresh));
-}
-
 // [[Rcpp::export]]
 List fastfps(NumericMatrix S, int d, double lambda,
              int maxiter, double eps_abs, double eps_rel,
