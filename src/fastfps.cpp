@@ -2,6 +2,7 @@
 #include "active.h"
 #include "walltime.h"
 
+using Rcpp::IntegerVector;
 using Rcpp::NumericMatrix;
 using Rcpp::List;
 
@@ -11,6 +12,7 @@ List fastfps(NumericMatrix S, int d, double lambda,
              double alpha0, double mu, double r,
              bool exact_feas = false, bool verbose = true)
 {
+    // Original dimension of the covariance matrix
     const int n0 = S.nrow();
     const int p0 = S.ncol();
     if(n0 != p0)
@@ -20,22 +22,32 @@ List fastfps(NumericMatrix S, int d, double lambda,
 
     // Compute active set
     std::vector<Triple> pattern;
-    analyze_pattern(S0, pattern);
     std::vector<int> act;
+    analyze_pattern(S0, pattern);
     find_active(pattern, d, lambda, act);
 
     // Create submatrix if possible
     const int p = act.size();
+    IntegerVector act_ind(p);
     MatrixXd Sact;
     if(verbose)
         Rcpp::Rcout << "Reduced active set size to " << p << std::endl;
     if(p < p0)
+    {
         submatrix_act(S0, act, Sact);
-    MapMat Smat((p < p0) ? (Sact.data()) : (S.begin()), p, p);
+        for(int i = 0; i < p; i++)
+            act_ind[i] = act[i] + 1;
+    } else {
+        for(int i = 0; i < p; i++)
+            act_ind[i] = i + 1;
+    }
 
+    // Reference to the submatrix or the original matrix
+    MapMat Smat((p < p0) ? (Sact.data()) : (S.begin()), p, p);
+    // Projection matrices
     MatrixXd x(p, p), xold(p, p);
     SpMat xsp(p, p);
-
+    // Objective function values
     std::vector<double> fn_obj, fn_feas, fn_feas1, fn_feas2, time;
 
     // Initial guess -- using partial eigen decomposition
@@ -50,6 +62,9 @@ List fastfps(NumericMatrix S, int d, double lambda,
     double time1, time2;
     for(int i = 0; i < maxiter; i++)
     {
+        if(verbose)
+            Rcpp::Rcout << "Iter " << i << std::endl;
+
         time1 = get_wall_time();
         alpha = alpha0 / (i + 1.0);
 
@@ -81,11 +96,10 @@ List fastfps(NumericMatrix S, int d, double lambda,
         fn_feas1.push_back(feas1);
         fn_feas2.push_back(feas2);
         fn_feas.push_back(feas1 + feas2);
-        if(verbose)
-            Rcpp::Rcout << i << std::endl;
 
         // Gradient descent
-        x.triangularView<Eigen::Upper>() = x.triangularView<Eigen::Lower>().transpose();
+        x.triangularView<Eigen::StrictlyUpper>() = x.triangularView<Eigen::StrictlyLower>().transpose();
+        // Momentum term
         if(i >= 2)
         {
             x.noalias() += (double(i - 1.0) / double(i + 2.0)) * (x - xold) + alpha * Smat;
@@ -141,6 +155,7 @@ List fastfps(NumericMatrix S, int d, double lambda,
     xsp.makeCompressed();
 
     return List::create(
+        Rcpp::Named("active")     = act_ind,
         Rcpp::Named("projection") = xsp,
         Rcpp::Named("objfn")      = fn_obj,
         Rcpp::Named("feasfn1")    = fn_feas1,
