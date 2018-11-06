@@ -4,6 +4,7 @@
 #include "common.h"
 #include <Spectra/SymEigsSolver.h>
 #include <Spectra/MatOp/SparseSymMatProd.h>
+#include <primme.h>
 
 // proj = V * V', where V contains the k eigenvectors associated with the largest eigenvalues
 inline MatrixXd eigs_dense_largest_spectra(
@@ -41,6 +42,72 @@ inline void eigs_sparse_both_ends_spectra(
     eigs.compute(1000, eps);
     evals.noalias() = eigs.eigenvalues();
     evecs.noalias() = eigs.eigenvectors();
+
+    // Rcpp::Rcout << "nop = " << eigs.num_operations() << std::endl;
 }
+
+
+
+
+
+inline void sp_mat_vec(
+    void* x, PRIMME_INT* ldx, void* y, PRIMME_INT* ldy,
+    int* blockSize, primme_params* primme, int* err)
+{
+    typedef Spectra::SparseSymMatProd<double> MatOp;
+
+    MatOp* op = (MatOp*) primme->matrix;
+
+    double* xvec;     /* pointer to i-th input vector x */
+    double* yvec;     /* pointer to i-th output vector y */
+
+    for(int i = 0; i < *blockSize; i++)
+    {
+        xvec = (double*) x + *ldx * i;
+        yvec = (double*) y + *ldy * i;
+
+        op->perform_op(xvec, yvec);
+    }
+    *err = 0;
+}
+
+// Largest and smallest eigenvalues of a sparse matrix xsp
+inline void eigs_sparse_both_ends_primme(
+    const SpMat& xsp, VectorXd& evals, MatrixXd& evecs, double eps = 1e-6
+)
+{
+    const int n = xsp.rows();
+    Spectra::SparseSymMatProd<double> op(xsp);
+    double resid[2];
+
+    primme_params primme;
+    primme_initialize(&primme);
+
+    primme.matrixMatvec = sp_mat_vec;
+    primme.n = n;
+    primme.numEvals = 1;
+    primme.eps = eps;
+    primme.target = primme_largest;
+    primme.iseed[0] = 0;
+    primme.iseed[1] = 1;
+    primme.iseed[2] = 2;
+    primme.iseed[3] = 3;
+    primme.matrix = &op;
+
+    primme_set_method(PRIMME_DYNAMIC, &primme);
+    int ret = dprimme(&evals[0], evecs.data(), &resid[0], &primme);
+    int nops = primme.stats.numMatvecs;
+
+    // Rcpp::Rcout << "nop1 = " << nops;
+
+    primme.target = primme_smallest;
+    ret = dprimme(&evals[1], evecs.data() + n, &resid[1], &primme);
+    nops = primme.stats.numMatvecs;
+
+    // Rcpp::Rcout << ", nop2 = " << nops << std::endl;
+
+    primme_free(&primme);
+}
+
 
 #endif // FASTFPS_EIGENVALUE_H
