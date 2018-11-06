@@ -68,13 +68,15 @@ List fastfps(NumericMatrix S, int d, double lambda,
         time1 = get_wall_time();
         alpha = alpha0 / (i + 1.0);
 
-        // L1 thresholding
+        // L1 thresholding, x -> xsp
         soft_thresh_sparse(x, lambda * alpha, xsp);
 
         // Eigenvalue shrinkage
         eigs_sparse_both_ends_primme(xsp, evals, evecs);
         const double lmax_new = lambda_max_thresh(evals[0], alpha * mu * r);
         const double lmin_new = lambda_min_thresh(evals[1], alpha * mu * r);
+        // Save x to xold and update x
+        x.swap(xold);
         rank2_update_sparse(xsp, lmax_new - evals[0], evecs.col(0), lmin_new - evals[1], evecs.col(1), x);
 
         // Trace shrinkage
@@ -112,7 +114,6 @@ List fastfps(NumericMatrix S, int d, double lambda,
         {
             x /= (xnorm / radius);
         }
-        xold.noalias() = x;
 
         // Record elapsed time and objective function values
         time2 = get_wall_time();
