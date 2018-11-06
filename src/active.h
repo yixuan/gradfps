@@ -60,5 +60,24 @@ inline void find_active(
     }
 }
 
+// Create a submatrix based on the active set
+// Assume x is symmetric and only the lower triangular part is referenced
+inline void submatrix_act(const MapMat& x, const std::vector<int>& act, MatrixXd& subx)
+{
+    const int p = act.size();
+    subx.resize(p, p);
+
+    for(int j = 0; j < p; j++)
+    {
+        for(int i = j; i < p; i++)
+        {
+            subx.coeffRef(i, j) = x.coeff(act[i], act[j]);
+        }
+    }
+
+    // Copy to the upper triangular part
+    subx.triangularView<Eigen::StrictlyUpper>() = subx.triangularView<Eigen::StrictlyLower>().transpose();
+}
+
 
 #endif // FASTFPS_ACTIVE_H
