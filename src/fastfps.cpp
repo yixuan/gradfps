@@ -1,4 +1,5 @@
 #include "fastfps.h"
+#include "active.h"
 #include "walltime.h"
 
 using Rcpp::NumericMatrix;
@@ -10,12 +11,28 @@ List fastfps(NumericMatrix S, int d, double lambda,
              double alpha0, double mu, double r,
              bool exact_feas = false, bool verbose = true)
 {
-    const int n = S.nrow();
-    const int p = S.ncol();
-    if(n != p)
+    const int n0 = S.nrow();
+    const int p0 = S.ncol();
+    if(n0 != p0)
         Rcpp::stop("S must be square");
 
-    MapMat Smat(S.begin(), p, p);
+    MapMat S0(S.begin(), p0, p0);
+
+    // Compute active set
+    std::vector<Triple> pattern;
+    analyze_pattern(S0, pattern);
+    std::vector<int> act;
+    find_active(pattern, d, lambda, act);
+
+    // Create submatrix if possible
+    const int p = act.size();
+    MatrixXd Sact;
+    if(verbose)
+        Rcpp::Rcout << "Reduced active set size to " << p << std::endl;
+    if(p < p0)
+        submatrix_act(S0, act, Sact);
+    MapMat Smat((p < p0) ? (Sact.data()) : (S.begin()), p, p);
+
     MatrixXd x(p, p), xold(p, p);
     SpMat xsp(p, p);
 
@@ -40,7 +57,7 @@ List fastfps(NumericMatrix S, int d, double lambda,
         soft_thresh_sparse(x, lambda * alpha, xsp);
 
         // Eigenvalue shrinkage
-        eigs_sparse_both_ends_spectra(xsp, evals, evecs);
+        eigs_sparse_both_ends_primme(xsp, evals, evecs);
         const double lmax_new = lambda_max_thresh(evals[0], alpha * mu * r);
         const double lmin_new = lambda_min_thresh(evals[1], alpha * mu * r);
         rank2_update_sparse(xsp, lmax_new - evals[0], evecs.col(0), lmin_new - evals[1], evecs.col(1), x);
