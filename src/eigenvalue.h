@@ -94,7 +94,7 @@ inline void eigs_sparse_both_ends_primme(
     primme.iseed[3] = 3;
     primme.matrix = &op;
 
-    primme_set_method(PRIMME_DYNAMIC, &primme);
+    primme_set_method(PRIMME_DEFAULT_MIN_TIME, &primme);
     int ret = dprimme(&evals[0], evecs.data(), &resid[0], &primme);
     int nops = primme.stats.numMatvecs;
 
