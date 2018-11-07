@@ -1,4 +1,4 @@
 importFrom(Rcpp, evalCpp)
 useDynLib(fastfps, .registration = TRUE)
 
-export(fastfps)
+export(fastfps, fastfps_path)
