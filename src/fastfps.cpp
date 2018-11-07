@@ -41,6 +41,8 @@ List fastfps(NumericMatrix S, int d, double lambda,
         for(int i = 0; i < p; i++)
             act_ind[i] = i + 1;
     }
+    // Adjust mu based on the new active set size
+    mu = std::min(mu, std::sqrt(double(p)));
 
     // Reference to the submatrix or the original matrix
     MapMat Smat((p < p0) ? (Sact.data()) : (S.begin()), p, p);
