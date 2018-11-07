@@ -47,6 +47,7 @@ List fastfps(NumericMatrix S, int d, double lambda,
     // Projection matrices
     MatrixXd x(p, p), xold(p, p);
     SpMat xsp(p, p);
+    xsp.reserve(Eigen::VectorXi::Constant(p, 10));
     // Objective function values
     std::vector<double> fn_obj, fn_feas, fn_feas1, fn_feas2, time;
 
