@@ -57,8 +57,7 @@ List fastfps_path(
     MapMat Smat((p < p0) ? (Sact.data()) : (S.begin()), p, p);
     // Projection matrices
     MatrixXd x(p, p), xold(p, p);
-    SpMat xsp(p, p);
-    xsp.reserve(Eigen::VectorXi::Constant(p, 10));
+    dgCMatrix xsp(p);
     // Objective function values
     std::vector<double> fn_obj, fn_feas, fn_feas1, fn_feas2, time;
 
@@ -96,7 +95,7 @@ List fastfps_path(
             alpha = alpha0 / (l + 1.0) / (i + 1.0);
 
             // L1 thresholding, x -> xsp
-            soft_thresh_sparse(x, curr_lambda * alpha, xsp);
+            xsp.soft_thresh(x.data(), curr_lambda * alpha);
 
             // Eigenvalue shrinkage
             eigs_sparse_both_ends_primme(xsp, evals, evecs);
@@ -165,13 +164,13 @@ List fastfps_path(
                 break;
         }
 
-        soft_thresh_sparse(x, curr_lambda * alpha, xsp);
-        xsp.makeCompressed();
+        // To make the final solution sparse
+        xsp.soft_thresh(x.data(), curr_lambda * alpha);
 
         res[l] = List::create(
             Rcpp::Named("lambda")     = curr_lambda,
             Rcpp::Named("active")     = act_ind,
-            Rcpp::Named("projection") = xsp,
+            Rcpp::Named("projection") = xsp.to_spmat(),
             Rcpp::Named("objfn")      = fn_obj,
             Rcpp::Named("feasfn1")    = fn_feas1,
             Rcpp::Named("feasfn2")    = fn_feas2,
@@ -182,6 +181,8 @@ List fastfps_path(
 
     return res;
 }
+
+
 
 // [[Rcpp::export]]
 List fastfps(NumericMatrix S, int d, double lambda,
@@ -225,8 +226,7 @@ List fastfps(NumericMatrix S, int d, double lambda,
     MapMat Smat((p < p0) ? (Sact.data()) : (S.begin()), p, p);
     // Projection matrices
     MatrixXd x(p, p), xold(p, p);
-    SpMat xsp(p, p);
-    xsp.reserve(Eigen::VectorXi::Constant(p, 10));
+    dgCMatrix xsp(p);
     // Objective function values
     std::vector<double> fn_obj, fn_feas, fn_feas1, fn_feas2, time;
 
@@ -249,7 +249,7 @@ List fastfps(NumericMatrix S, int d, double lambda,
         alpha = alpha0 / (i + 1.0);
 
         // L1 thresholding, x -> xsp
-        soft_thresh_sparse(x, lambda * alpha, xsp);
+        xsp.soft_thresh(x.data(), lambda * alpha);
 
         // Eigenvalue shrinkage
         eigs_sparse_both_ends_primme(xsp, evals, evecs);
@@ -332,12 +332,12 @@ List fastfps(NumericMatrix S, int d, double lambda,
             break;
     }
 
-    soft_thresh_sparse(x, lambda * alpha, xsp);
-    xsp.makeCompressed();
+    // To make the final solution sparse
+    xsp.soft_thresh(x.data(), lambda * alpha);
 
     return List::create(
         Rcpp::Named("active")     = act_ind,
-        Rcpp::Named("projection") = xsp,
+        Rcpp::Named("projection") = xsp.to_spmat(),
         Rcpp::Named("objfn")      = fn_obj,
         Rcpp::Named("feasfn1")    = fn_feas1,
         Rcpp::Named("feasfn2")    = fn_feas2,

@@ -2,6 +2,7 @@
 #define FASTFPS_FASTFPS_H
 
 #include "common.h"
+#include "sparsemat.h"
 #include "eigenvalue.h"
 
 // Initial guess using partial eigen decomposition
@@ -25,45 +26,11 @@ inline double lambda_min_thresh(double x, double thresh)
     ((x > -thresh) ? 0.0 : (x + thresh));
 }
 
-// Apply the soft-thresholding operator on a symmetrix matrix x,
-// and return a sparse matrix. Only the lower triangular part of x
-// is referenced.
-//
-// NOTE: the returned sparse matrix is not compressed, and only the lower
-//       triangular part contains values.
-template <typename MatType>
-inline void soft_thresh_sparse(
-    const MatType& x, double lambda, SpMat& res
-)
-{
-    const int p = x.rows();
-    res.resize(p, p);
-    res.setZero();
-
-    for(int j = 0; j < p; j++)
-    {
-        for(int i = j; i < p; i++)
-        {
-            const double xij = x.coeff(i, j);
-            if(xij > lambda)
-            {
-                res.insert(i, j) = xij - lambda;
-            } else if(xij < -lambda)
-            {
-                res.insert(i, j) = xij + lambda;
-            }
-        }
-    }
-}
-
 // Apply a rank-2 update on a sparse matrix x.
-// Only the lower triangular part is referenced.
+// Only the lower triangular part is read and written
 // res <- x + a1 * v1 * v1' + a2 * v2 * v2'
-//
-// NOTE: only the lower triagular part is written.
-template <typename MatType>
 inline void rank2_update_sparse(
-    const SpMat& x, double a1, const RefVec& v1, double a2, const RefVec& v2, MatType& res
+    const dgCMatrix& x, double a1, const RefVec& v1, double a2, const RefVec& v2, MatrixXd& res
 )
 {
     const int p = x.rows();
@@ -80,10 +47,7 @@ inline void rank2_update_sparse(
     if(a1_abs <= eps && a2_abs <= eps)
     {
         res.setZero();
-    }
-    // a1 == 0, a2 != 0
-    if(a1_abs <= eps && a2_abs > eps)
-    {
+    } else if(a1_abs <= eps && a2_abs > eps) {          // a1 == 0, a2 != 0
         for(int j = 0; j < p; j++)
         {
             const double v2j = a2 * v2p[j];
@@ -92,10 +56,7 @@ inline void rank2_update_sparse(
                 res.coeffRef(i, j) = v2j * v2p[i];
             }
         }
-    }
-    // a1 != 0, a2 == 0
-    if(a1_abs > eps && a2_abs <= eps)
-    {
+    } else if(a1_abs > eps && a2_abs <= eps) {          // a1 != 0, a2 == 0
         for(int j = 0; j < p; j++)
         {
             const double v1j = a1 * v1p[j];
@@ -104,10 +65,7 @@ inline void rank2_update_sparse(
                 res.coeffRef(i, j) = v1j * v1p[i];
             }
         }
-    }
-    // a1 != 0, a2 != 0
-    if(a1_abs > eps && a2_abs > eps)
-    {
+    } else {                                            // a1 != 0, a2 != 0
         for(int j = 0; j < p; j++)
         {
             const double v1j = a1 * v1p[j];
@@ -120,14 +78,7 @@ inline void rank2_update_sparse(
     }
 
     // Add the sparse matrix
-    const int jx = x.outerSize();
-    for(int j = 0; j < jx; j++)
-    {
-        for(SpMat::InnerIterator it(x, j); it; ++it)
-        {
-            res.coeffRef(it.row(), j) += it.value();
-        }
-    }
+    x.add_to(res.data());
 }
 
 
