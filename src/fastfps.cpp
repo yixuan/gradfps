@@ -86,7 +86,8 @@ List fastfps_path(
 
         double alpha = 0.0;
         double time1, time2;
-        for(int i = 0; i < maxiter; i++)
+        int i;
+        for(i = 0; i < maxiter; i++)
         {
             if(verbose)
                 Rcpp::Rcout << "Iter " << i << std::endl;
@@ -175,6 +176,7 @@ List fastfps_path(
             Rcpp::Named("feasfn1")    = fn_feas1,
             Rcpp::Named("feasfn2")    = fn_feas2,
             Rcpp::Named("feasfn")     = fn_feas,
+            Rcpp::Named("niter")      = std::min(i + 1, maxiter),
             Rcpp::Named("time")       = time
         );
     }
@@ -240,7 +242,8 @@ List fastfps(NumericMatrix S, int d, double lambda,
 
     double alpha = 0.0;
     double time1, time2;
-    for(int i = 0; i < maxiter; i++)
+    int i;
+    for(i = 0; i < maxiter; i++)
     {
         if(verbose)
             Rcpp::Rcout << "Iter " << i << std::endl;
@@ -342,6 +345,7 @@ List fastfps(NumericMatrix S, int d, double lambda,
         Rcpp::Named("feasfn1")    = fn_feas1,
         Rcpp::Named("feasfn2")    = fn_feas2,
         Rcpp::Named("feasfn")     = fn_feas,
+        Rcpp::Named("niter")      = std::min(i + 1, maxiter),
         Rcpp::Named("time")       = time
     );
 }
