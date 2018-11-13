@@ -81,6 +81,40 @@ inline void rank2_update_sparse(
     x.add_to(res.data());
 }
 
+// Apply a rank-2 update on a sparse matrix x.
+// Only the lower triangular part is read and written
+// res <- x + a1 * v1 * v1' + ... + ar * vr * vr'
+template <int r>
+void rank_r_update_sparse(
+    const dgCMatrix& x, const RefVec& a, const RefMat& v, MatrixXd& res
+)
+{
+    const int p = x.rows();
+    res.resize(p, p);
+
+    double vj[r];
+
+    for(int j = 0; j < p; j++)
+    {
+        for(int k = 0; k < r; k++)
+        {
+            vj[k] = a[k] * v.coeff(j, k);
+        }
+        for(int i = j; i < p; i++)
+        {
+            double sum = 0.0;
+            for(int k = 0; k < r; k++)
+            {
+                sum += vj[k] * v.coeff(i, k);
+            }
+            res.coeffRef(i, j) = sum;
+        }
+    }
+
+    // Add the sparse matrix
+    x.add_to(res.data());
+}
+
 // x += alpha*x + beta*y + gamma*z
 // Only the lower triangular part is read and written
 inline void sym_mat_update(

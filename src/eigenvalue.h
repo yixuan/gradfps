@@ -71,20 +71,21 @@ inline void sp_mat_vec(
 }
 
 // Largest and smallest eigenvalues of a sparse matrix xsp
+template <int N>
 inline void eigs_sparse_both_ends_primme(
     const dgCMatrix& xsp, VectorXd& evals, MatrixXd& evecs, double eps = 1e-6
 )
 {
     const int n = xsp.rows();
     dgCMatrixOp op(xsp);
-    double resid[2];
+    double resid[2 * N];
 
     primme_params primme;
     primme_initialize(&primme);
 
     primme.matrixMatvec = sp_mat_vec;
     primme.n = n;
-    primme.numEvals = 1;
+    primme.numEvals = N;
     primme.eps = eps;
     primme.target = primme_largest;
     primme.iseed[0] = 0;
@@ -95,13 +96,13 @@ inline void eigs_sparse_both_ends_primme(
 
     primme_set_method(PRIMME_DEFAULT_MIN_TIME, &primme);
     int ret = dprimme(&evals[0], evecs.data(), &resid[0], &primme);
-    int nops = primme.stats.numMatvecs;
+    // int nops = primme.stats.numMatvecs;
 
     // Rcpp::Rcout << "nop1 = " << nops;
 
     primme.target = primme_smallest;
-    ret = dprimme(&evals[1], evecs.data() + n, &resid[1], &primme);
-    nops = primme.stats.numMatvecs;
+    ret = dprimme(&evals[N], evecs.data() + N * n, &resid[N], &primme);
+    // nops = primme.stats.numMatvecs;
 
     // Rcpp::Rcout << ", nop2 = " << nops << std::endl;
 

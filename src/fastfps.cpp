@@ -6,7 +6,7 @@ using Rcpp::IntegerVector;
 using Rcpp::NumericMatrix;
 using Rcpp::List;
 
-// [[Rcpp::export]]
+/*// [[Rcpp::export]]
 List fastfps_path(
     NumericMatrix S, int d,
     double lambda_min, double lambda_max, int nlambda,
@@ -182,7 +182,7 @@ List fastfps_path(
     }
 
     return res;
-}
+}*/
 
 
 
@@ -236,8 +236,10 @@ List fastfps(NumericMatrix S, int d, double lambda,
     initial_guess(Smat, d, x);
 
     // Eigenvalue computation
-    VectorXd evals(2);
-    MatrixXd evecs(p, 2);
+    const int N = 2;
+    VectorXd evals(2 * N);
+    VectorXd evals_new(2 * N);
+    MatrixXd evecs(p, 2 * N);
     VectorXd diag(p);
 
     double alpha = 0.0;
@@ -255,13 +257,20 @@ List fastfps(NumericMatrix S, int d, double lambda,
         xsp.soft_thresh(x.data(), lambda * alpha);
 
         // Eigenvalue shrinkage
-        eigs_sparse_both_ends_primme(xsp, evals, evecs);
-        const double lmax_new = lambda_max_thresh(evals[0], alpha * mu * r);
-        const double lmin_new = lambda_min_thresh(evals[1], alpha * mu * r);
+        eigs_sparse_both_ends_primme<N>(xsp, evals, evecs);
+        // const double lmax_new = lambda_max_thresh(evals[0], alpha * mu * r);
+        // const double lmin_new = lambda_min_thresh(evals[1], alpha * mu * r);
+        for(int i = 0; i < N; i++)
+        {
+            evals_new[i]     = lambda_max_thresh(evals[i],     alpha * mu * r);
+            evals_new[N + i] = lambda_min_thresh(evals[N + i], alpha * mu * r);
+        }
+        evals_new.noalias() -= evals;
         // Save x to xold and update x
         x.swap(xold);
         // x <- xsp + (l1_new - l1) * v1 * v1' + (lp_new - lp) * vp * vp'
-        rank2_update_sparse(xsp, lmax_new - evals[0], evecs.col(0), lmin_new - evals[1], evecs.col(1), x);
+        // rank2_update_sparse(xsp, lmax_new - evals[0], evecs.col(0), lmin_new - evals[1], evecs.col(1), x);
+        rank_r_update_sparse<2 * N>(xsp, evals_new, evecs, x);
 
         // Trace shrinkage
         const double tbar = x.diagonal().mean();
