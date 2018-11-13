@@ -58,6 +58,19 @@ private:
         return maxabs;
     }
 
+    // Flatten the incremental active sets into a single vector
+    inline std::vector<int> flatten_act_set() const
+    {
+        std::vector<int> res;
+        res.reserve(m_p);
+        const int nlambda = m_act_set.size();
+
+        for(int i = 0; i < nlambda; i++)
+            res.insert(res.end(), m_act_set[i].begin(), m_act_set[i].end());
+
+        return res;
+    }
+
 public:
     ActiveSet(ConstRefMat& x) :
         m_p(x.rows()), m_mat(x.data(), m_p, m_p)
@@ -138,6 +151,27 @@ public:
         }
 
         return res;
+    }
+    inline Rcpp::IntegerVector active_set_flatten_to_r() const
+    {
+        return Rcpp::wrap(flatten_act_set());
+    }
+
+    // Compute the largest submatrix (the one associated with the smallest lambda)
+    inline void compute_submatrix()
+    {
+        std::vector<int> act = flatten_act_set();
+        const int pa = act.size();
+        m_sub_mat.resize(pa, pa);
+
+        // We ony write the lower triangular part
+        for(int j = 0; j < pa; j++)
+        {
+            for(int i = j; i < pa; i++)
+            {
+                m_sub_mat.coeffRef(i, j) = m_mat.coeff(act[i], act[j]);
+            }
+        }
     }
 };
 
