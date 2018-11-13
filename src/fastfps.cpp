@@ -6,7 +6,7 @@ using Rcpp::IntegerVector;
 using Rcpp::NumericMatrix;
 using Rcpp::List;
 
-/*// [[Rcpp::export]]
+// [[Rcpp::export]]
 List fastfps_path(
     NumericMatrix S, int d,
     double lambda_min, double lambda_max, int nlambda,
@@ -62,8 +62,12 @@ List fastfps_path(
     std::vector<double> fn_obj, fn_feas, fn_feas1, fn_feas2, time;
 
     // Eigenvalue computation
-    VectorXd evals(2);
-    MatrixXd evecs(p, 2);
+    // Number of eigenvalue pairs to compute, i.e.,
+    // the largest N and smallest N eigenvalues
+    const int N = 2;
+    VectorXd evals(2 * N);
+    VectorXd evals_new(2 * N);
+    MatrixXd evecs(p, 2 * N);
     VectorXd diag(p);
 
     // Initial guess -- using partial eigen decomposition
@@ -99,12 +103,16 @@ List fastfps_path(
             xsp.soft_thresh(x.data(), curr_lambda * alpha);
 
             // Eigenvalue shrinkage
-            eigs_sparse_both_ends_primme(xsp, evals, evecs);
-            const double lmax_new = lambda_max_thresh(evals[0], alpha * mu * r);
-            const double lmin_new = lambda_min_thresh(evals[1], alpha * mu * r);
+            eigs_sparse_both_ends_primme<N>(xsp, evals, evecs);
+            for(int i = 0; i < N; i++)
+            {
+                evals_new[i]     = lambda_max_thresh(evals[i],     alpha * mu * r);
+                evals_new[N + i] = lambda_min_thresh(evals[N + i], alpha * mu * r);
+            }
+            evals_new.noalias() -= evals;
             // Save x to xold and update x
             x.swap(xold);
-            rank2_update_sparse(xsp, lmax_new - evals[0], evecs.col(0), lmin_new - evals[1], evecs.col(1), x);
+            rank_r_update_sparse<2 * N>(xsp, evals_new, evecs, x);
 
             // Trace shrinkage
             const double tbar = x.diagonal().mean();
@@ -119,21 +127,24 @@ List fastfps_path(
             }
 
             // Compute (approximate) feasibility loss
-            const double feas1 = mu * r * (std::max(0.0, -evals[1]),
-                                           std::max(0.0, evals[0] - 1.0));
+            double feas1 = 0.0;
+            for(int i = 0; i < N; i++)
+            {
+                feas1 += std::max(0.0, evals[i] - 1.0) + std::max(0.0, -evals[N + i]);
+            }
+            feas1 *= (mu * r);
             const double feas2 = mu * std::sqrt(double(p)) * std::abs(tr_shift);
             fn_feas1.push_back(feas1);
             fn_feas2.push_back(feas2);
             fn_feas.push_back(feas1 + feas2);
 
-            // Gradient descent
-            x.triangularView<Eigen::StrictlyUpper>() = x.triangularView<Eigen::StrictlyLower>().transpose();
-            // Momentum term
+            // Gradient descent with momentum term
             if(i >= 2)
             {
-                x.noalias() += (double(i - 1.0) / double(i + 2.0)) * (x - xold) + alpha * Smat;
+                const double w = (double(i - 1.0) / double(i + 2.0));
+                sym_mat_update(p, x.data(), xold.data(), Smat.data(), w, -w, alpha);
             } else {
-                x.noalias() += alpha * Smat;
+                sym_mat_update(p, x.data(), Smat.data(), alpha);
             }
             const double xnorm = x.norm();
             const double radius = std::sqrt(double(d));
@@ -144,7 +155,7 @@ List fastfps_path(
 
             // Record elapsed time and objective function values
             time2 = get_wall_time();
-            fn_obj.push_back(-Smat.cwiseProduct(x).sum() + curr_lambda * x.cwiseAbs().sum());
+            fn_obj.push_back(fps_objfn(p, x.data(), Smat.data(), curr_lambda));
             time.push_back(time2 - time1);
 
             // Convergence test, only after 10 iterations
@@ -182,7 +193,7 @@ List fastfps_path(
     }
 
     return res;
-}*/
+}
 
 
 
