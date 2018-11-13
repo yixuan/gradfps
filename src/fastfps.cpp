@@ -236,6 +236,8 @@ List fastfps(NumericMatrix S, int d, double lambda,
     initial_guess(Smat, d, x);
 
     // Eigenvalue computation
+    // Number of eigenvalue pairs to compute, i.e.,
+    // the largest N and smallest N eigenvalues
     const int N = 2;
     VectorXd evals(2 * N);
     VectorXd evals_new(2 * N);
@@ -285,8 +287,12 @@ List fastfps(NumericMatrix S, int d, double lambda,
         }
 
         // Compute (approximate) feasibility loss
-        const double feas1 = mu * r * (std::max(0.0, -evals[1]),
-                                       std::max(0.0, evals[0] - 1.0));
+        double feas1 = 0.0;
+        for(int i = 0; i < N; i++)
+        {
+            feas1 += std::max(0.0, evals[i] - 1.0) + std::max(0.0, -evals[N + i]);
+        }
+        feas1 *= (mu * r);
         const double feas2 = mu * std::sqrt(double(p)) * std::abs(tr_shift);
         fn_feas1.push_back(feas1);
         fn_feas2.push_back(feas2);
