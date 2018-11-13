@@ -251,7 +251,7 @@ List fastfps(NumericMatrix S, int d, double lambda,
         time1 = get_wall_time();
         alpha = alpha0 / (i + 1.0);
 
-        // L1 thresholding, x -> xsp
+        // L1 thresholding, xsp <- soft_thresh(x)
         xsp.soft_thresh(x.data(), lambda * alpha);
 
         // Eigenvalue shrinkage
@@ -260,6 +260,7 @@ List fastfps(NumericMatrix S, int d, double lambda,
         const double lmin_new = lambda_min_thresh(evals[1], alpha * mu * r);
         // Save x to xold and update x
         x.swap(xold);
+        // x <- xsp + (l1_new - l1) * v1 * v1' + (lp_new - lp) * vp * vp'
         rank2_update_sparse(xsp, lmax_new - evals[0], evecs.col(0), lmin_new - evals[1], evecs.col(1), x);
 
         // Trace shrinkage
@@ -282,16 +283,17 @@ List fastfps(NumericMatrix S, int d, double lambda,
         fn_feas2.push_back(feas2);
         fn_feas.push_back(feas1 + feas2);
 
-        // Gradient descent
-        x.triangularView<Eigen::StrictlyUpper>() = x.triangularView<Eigen::StrictlyLower>().transpose();
-        // Momentum term
+        // Gradient descent with momentum term
         if(i >= 2)
         {
-            x.noalias() += (double(i - 1.0) / double(i + 2.0)) * (x - xold) + alpha * Smat;
+            // x.noalias() += (double(i - 1.0) / double(i + 2.0)) * (x - xold) + alpha * Smat;
+            const double w = (double(i - 1.0) / double(i + 2.0));
+            sym_mat_update(p, x.data(), xold.data(), Smat.data(), w, -w, alpha);
         } else {
-            x.noalias() += alpha * Smat;
+            // x.noalias() += alpha * Smat;
+            sym_mat_update(p, x.data(), Smat.data(), alpha);
         }
-        const double xnorm = x.norm();
+        const double xnorm = sym_mat_norm(p, x.data());
         const double radius = std::sqrt(double(d));
         if(xnorm > radius)
         {
@@ -300,7 +302,8 @@ List fastfps(NumericMatrix S, int d, double lambda,
 
         // Record elapsed time and objective function values
         time2 = get_wall_time();
-        fn_obj.push_back(-Smat.cwiseProduct(x).sum() + lambda * x.cwiseAbs().sum());
+        // fn_obj.push_back(-Smat.cwiseProduct(x).sum() + lambda * x.cwiseAbs().sum());
+        fn_obj.push_back(fps_objfn(p, x.data(), Smat.data(), lambda));
         time.push_back(time2 - time1);
 
         // Compute exact feasibility loss
