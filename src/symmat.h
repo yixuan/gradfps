@@ -24,12 +24,9 @@ public:
         m_lead_dim(0), m_n(0)
     {}
 
-    SymMat(int max_n, bool allocate = false) :
-        m_lead_dim(max_n), m_n(max_n)
-    {
-        if(allocate)
-            m_data.resize(m_lead_dim, m_lead_dim);
-    }
+    SymMat(int max_n) :
+        m_lead_dim(max_n), m_data(Matrix::Zero(max_n, max_n)), m_n(max_n)
+    {}
 
     // For debugging
     inline void print() const

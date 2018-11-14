@@ -232,7 +232,7 @@ List fastfps(MapMat S, int d, double lambda,
     mu = std::min(mu, std::sqrt(double(p)));
 
     // Projection matrices
-    SymMat x(p, false), xold(p, true);
+    SymMat x(p), xold(p);
     dgCMatrix xsp(p);
 
     // Objective function values

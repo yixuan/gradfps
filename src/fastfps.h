@@ -10,9 +10,8 @@
 inline void initial_guess(const SymMat& S, int d, SymMat& x)
 {
     MatrixXd evecs = eigs_dense_largest_spectra(S, d);
-    MatrixXd proj(S.dim(), S.dim());
-    proj.noalias() = evecs * evecs.transpose();
-    x.swap(proj);
+    MapMat(x.data(), x.lead_dim(), x.lead_dim()).topLeftCorner(S.rows(), S.rows()).noalias() =
+        evecs * evecs.transpose();
 }
 
 // Thresholding of eigenvalues
