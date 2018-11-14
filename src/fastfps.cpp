@@ -7,60 +7,53 @@ using Rcpp::IntegerVector;
 using Rcpp::NumericMatrix;
 using Rcpp::List;
 
-/*// [[Rcpp::export]]
+// [[Rcpp::export]]
 List fastfps_path(
-    NumericMatrix S, int d,
+    MapMat S, int d,
     double lambda_min, double lambda_max, int nlambda,
     int maxiter, double eps_abs, double eps_rel,
-    double alpha0, double mu, double r,
+    double alpha0, double mu0, double r,
     bool verbose = true)
 {
     // Original dimension of the covariance matrix
-    const int n0 = S.nrow();
-    const int p0 = S.ncol();
+    const int n0 = S.rows();
+    const int p0 = S.cols();
     if(n0 != p0)
         Rcpp::stop("S must be square");
 
-    MapMat S0(S.begin(), p0, p0);
-
     // Create the lambda sequence
-    VectorXd lambda(nlambda);
+    VectorXd lambdas(nlambda);
     const double llmin = std::log(lambda_min), llmax = std::log(lambda_max);
     const double step = (llmax - llmin) / (nlambda - 1);
     for(int i = 0; i < nlambda; i++)
-        lambda[i] = std::exp(llmax - step * i);
+        lambdas[i] = std::exp(llmax - step * i);
 
-    // Compute active set based on the smallest lambda
-    std::vector<Triple> pattern;
-    std::vector<int> act;
-    analyze_pattern(S0, pattern);
-    find_active(pattern, d, lambda_min, act);
+    // Compute active set
+    ActiveSet act_set(S);
+    act_set.analyze_pattern();
+    act_set.find_active(d, lambdas);
+    const std::vector< std::vector<int> >& inc_act = act_set.incremental_active_set();
 
-    // Create submatrix if possible
-    const int p = act.size();
-    IntegerVector act_ind(p);
-    MatrixXd Sact;
-    if(verbose)
-        Rcpp::Rcout << "Reduced active set size to " << p << std::endl;
-    if(p < p0)
-    {
-        submatrix_act(S0, act, Sact);
-        for(int i = 0; i < p; i++)
-            act_ind[i] = act[i] + 1;
-    } else {
-        for(int i = 0; i < p; i++)
-            act_ind[i] = i + 1;
-    }
-    // Adjust mu based on the new active set size
-    mu = std::min(mu, std::sqrt(double(p)));
+    // Submatrix
+    SymMat Smat;
+    std::vector<int> flat_act = act_set.compute_submatrix(Smat);
+    const int pmax = Smat.dim();
+    IntegerVector act_ind(pmax);
+    for(int i = 0; i < pmax; i++)
+        act_ind[i] = flat_act[i] + 1;
 
-    // Reference to the submatrix or the original matrix
-    MapMat Smat((p < p0) ? (Sact.data()) : (S.begin()), p, p);
     // Projection matrices
-    MatrixXd x(p, p), xold(p, p);
-    dgCMatrix xsp(p);
+    SymMat x(pmax), xold(pmax);
+    dgCMatrix xsp(pmax);
+
     // Objective function values
     std::vector<double> fn_obj, fn_feas, fn_feas1, fn_feas2, time;
+
+    // Initial guess -- using partial eigen decomposition
+    // Set initial dimension
+    Smat.set_dim(inc_act[0].size());
+    x.set_dim(inc_act[0].size());
+    initial_guess(Smat, d, x);
 
     // Eigenvalue computation
     // Number of eigenvalue pairs to compute, i.e.,
@@ -68,18 +61,18 @@ List fastfps_path(
     const int N = 1;
     VectorXd evals(2 * N);
     VectorXd evals_new(2 * N);
-    MatrixXd evecs(p, 2 * N);
-    VectorXd diag(p);
-
-    // Initial guess -- using partial eigen decomposition
-    initial_guess(Smat, d, x);
+    // Size of eigenvectors depend on the actual dimension
+    // Here we allocate memory to the largest size
+    MatrixXd evecs_data(pmax, 2 * N);
 
     // Final result
     List res(nlambda);
 
+    // Size of active set for each lambda
+    int p = 0;
     for(int l = 0; l < nlambda; l++)
     {
-        const double curr_lambda = lambda[l];
+        const double curr_lambda = lambdas[l];
         fn_obj.clear();
         fn_feas.clear();
         fn_feas1.clear();
@@ -87,7 +80,20 @@ List fastfps_path(
         time.clear();
 
         if(verbose)
-            Rcpp::Rcout << "lambda = " << curr_lambda << std::endl;
+            Rcpp::Rcout << "** lambda = " << curr_lambda << std::endl;
+
+        // Compute the current active set size
+        p += inc_act[l].size();
+        Smat.set_dim(p);
+        x.set_dim(p);
+        xold.set_dim(p);
+        xsp.resize(p);
+
+        if(verbose)
+            Rcpp::Rcout << "** active set size: " << p << std::endl;
+
+        // Adjust mu based on the new active set size
+        const double mu = std::min(mu0, std::sqrt(double(p)));
 
         double alpha = 0.0;
         double time1, time2;
@@ -95,15 +101,16 @@ List fastfps_path(
         for(i = 0; i < maxiter; i++)
         {
             if(verbose)
-                Rcpp::Rcout << "Iter " << i << std::endl;
+                Rcpp::Rcout << "==> Iter " << i << std::endl;
 
             time1 = get_wall_time();
             alpha = alpha0 / (l + 1.0) / (i + 1.0);
 
-            // L1 thresholding, x -> xsp
-            xsp.soft_thresh(x.data(), curr_lambda * alpha);
+            // L1 thresholding, xsp <- soft_thresh(x)
+            xsp.soft_thresh(x, curr_lambda * alpha);
 
             // Eigenvalue shrinkage
+            MapMat evecs(evecs_data.data(), p, 2 * N);
             eigs_sparse_both_ends_primme<N>(xsp, evals, evecs);
             for(int i = 0; i < N; i++)
             {
@@ -113,19 +120,17 @@ List fastfps_path(
             evals_new.noalias() -= evals;
             // Save x to xold and update x
             x.swap(xold);
-            rank_r_update_sparse<2 * N>(xsp, evals_new, evecs, x);
+            rank_r_update_sparse<2 * N>(x, xsp, evals_new, evecs);
 
             // Trace shrinkage
-            const double tbar = x.diagonal().mean();
+            const double tbar = x.trace() / p;
             const double tr_shift = double(d) / double(p) - tbar;
-            diag.array() = x.diagonal().array() + tr_shift;
             const double beta = alpha * mu / std::sqrt(double(p)) / std::abs(tr_shift);
-            if(beta >= 1.0)
-            {
-                x.diagonal().noalias() = diag;
-            } else {
-                x.diagonal().noalias() = (1.0 - beta) * x.diagonal() + beta * diag;
-            }
+            // d' = d + s, where d is the original diagonal elements, and s is the shift
+            // If beta >= 1, d <- d' = d + s
+            // Otherwise, d <- (1 - beta) * d + beta * d' = d + beta * s
+            // In a single formula, d <- d + min(beta, 1) * s
+            x.diag_add(std::min(beta, 1.0) * tr_shift);
 
             // Compute (approximate) feasibility loss
             double feas1 = 0.0;
@@ -142,21 +147,22 @@ List fastfps_path(
             // Gradient descent with momentum term
             if(i >= 2)
             {
+                // x += (double(i - 1.0) / double(i + 2.0)) * (x - xold) + alpha * Smat;
                 const double w = (double(i - 1.0) / double(i + 2.0));
-                sym_mat_update(p, x.data(), xold.data(), Smat.data(), w, -w, alpha);
+                x.add(w, -w, alpha, xold, Smat);
             } else {
-                sym_mat_update(p, x.data(), Smat.data(), alpha);
+                // x += alpha * Smat;
+                x.add(alpha, Smat);
             }
             const double xnorm = x.norm();
             const double radius = std::sqrt(double(d));
+            // Scale to an L2 ball if too large
             if(xnorm > radius)
-            {
-                x /= (xnorm / radius);
-            }
+                x.scale(radius / xnorm);
 
             // Record elapsed time and objective function values
             time2 = get_wall_time();
-            fn_obj.push_back(fps_objfn(p, x.data(), Smat.data(), curr_lambda));
+            fn_obj.push_back(fps_objfn(Smat, x, curr_lambda));
             time.push_back(time2 - time1);
 
             // Convergence test, only after 10 iterations
@@ -164,12 +170,12 @@ List fastfps_path(
                 continue;
             // Feasibility loss, using the average of the most recent 5 values
             const double feas_curr = std::accumulate(fn_feas.end() - 5, fn_feas.end(), 0.0) / 5.0;
-            const double feas_prev = std::accumulate(fn_feas.end() - 6, fn_feas.end() - 1, 0.0) / 5.0;
+            const double feas_prev = std::accumulate(fn_feas.end() - 10, fn_feas.end() - 5, 0.0) / 5.0;
             const double feas_diff = std::abs(feas_curr - feas_prev);
             const bool feas_conv = feas_diff < eps_abs || feas_diff < eps_rel * std::abs(feas_prev);
             // Objective function, using the average of the most recent 5 values
             const double obj_curr = std::accumulate(fn_obj.end() - 5, fn_obj.end(), 0.0) / 5.0;
-            const double obj_prev = std::accumulate(fn_obj.end() - 6, fn_obj.end() - 1, 0.0) / 5.0;
+            const double obj_prev = std::accumulate(fn_obj.end() - 10, fn_obj.end() - 5, 0.0) / 5.0;
             const double obj_diff = std::abs(obj_curr - obj_prev);
             const bool obj_conv = obj_diff < eps_abs || obj_diff < eps_rel * std::abs(obj_prev);
 
@@ -178,11 +184,11 @@ List fastfps_path(
         }
 
         // To make the final solution sparse
-        xsp.soft_thresh(x.data(), curr_lambda * alpha);
+        xsp.soft_thresh(x, curr_lambda * alpha);
 
         res[l] = List::create(
             Rcpp::Named("lambda")     = curr_lambda,
-            Rcpp::Named("active")     = act_ind,
+            Rcpp::Named("act_size")   = p,
             Rcpp::Named("projection") = xsp.to_spmat(),
             Rcpp::Named("objfn")      = fn_obj,
             Rcpp::Named("feasfn1")    = fn_feas1,
@@ -193,8 +199,11 @@ List fastfps_path(
         );
     }
 
-    return res;
-}*/
+    return List::create(
+        Rcpp::Named("active")   = act_ind,
+        Rcpp::Named("solution") = res
+    );
+}
 
 
 
