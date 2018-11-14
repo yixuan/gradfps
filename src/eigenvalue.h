@@ -22,7 +22,7 @@ inline MatrixXd eigs_dense_largest_spectra(
 
 // Largest and smallest eigenvalues of a dense matrix x
 inline void eigs_dense_both_ends_spectra(
-    const SymMat& x, VectorXd& evals, double eps = 1e-6
+    const SymMat& x, RefVec evals, double eps = 1e-6
 )
 {
     Spectra::SymEigsSolver<double, Spectra::BOTH_ENDS, const SymMat> eigs(&x, 2, 10);
@@ -33,7 +33,7 @@ inline void eigs_dense_both_ends_spectra(
 
 // Largest and smallest eigenvalues of a sparse matrix xsp
 inline void eigs_sparse_both_ends_spectra(
-    const dgCMatrix& xsp, VectorXd& evals, MatrixXd& evecs, double eps = 1e-6
+    const dgCMatrix& xsp, RefVec evals, RefMat evecs, double eps = 1e-6
 )
 {
     Spectra::SymEigsSolver<double, Spectra::BOTH_ENDS, const dgCMatrix> eigs(&xsp, 2, 10);
@@ -71,7 +71,7 @@ inline void sp_mat_vec(
 // Largest and smallest eigenvalues of a sparse matrix xsp
 template <int N>
 inline void eigs_sparse_both_ends_primme(
-    const dgCMatrix& xsp, VectorXd& evals, MatrixXd& evecs, double eps = 1e-6
+    const dgCMatrix& xsp, RefVec evals, RefMat evecs, double eps = 1e-6
 )
 {
     const int n = xsp.rows();
