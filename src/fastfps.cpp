@@ -338,12 +338,12 @@ List fastfps(MapMat S, int d, double lambda,
             continue;
         // Feasibility loss, using the average of the most recent 5 values
         const double feas_curr = std::accumulate(fn_feas.end() - 5, fn_feas.end(), 0.0) / 5.0;
-        const double feas_prev = std::accumulate(fn_feas.end() - 6, fn_feas.end() - 1, 0.0) / 5.0;
+        const double feas_prev = std::accumulate(fn_feas.end() - 10, fn_feas.end() - 5, 0.0) / 5.0;
         const double feas_diff = std::abs(feas_curr - feas_prev);
         const bool feas_conv = feas_diff < eps_abs || feas_diff < eps_rel * std::abs(feas_prev);
         // Objective function, using the average of the most recent 5 values
         const double obj_curr = std::accumulate(fn_obj.end() - 5, fn_obj.end(), 0.0) / 5.0;
-        const double obj_prev = std::accumulate(fn_obj.end() - 6, fn_obj.end() - 1, 0.0) / 5.0;
+        const double obj_prev = std::accumulate(fn_obj.end() - 10, fn_obj.end() - 5, 0.0) / 5.0;
         const double obj_diff = std::abs(obj_curr - obj_prev);
         const bool obj_conv = obj_diff < eps_abs || obj_diff < eps_rel * std::abs(obj_prev);
 
