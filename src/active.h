@@ -59,7 +59,7 @@ private:
     }
 
     // Flatten the incremental active sets into a single vector
-    inline std::vector<int> flatten_act_set() const
+    inline std::vector<int> flattened_active_set() const
     {
         std::vector<int> res;
         res.reserve(m_p);
@@ -140,8 +140,13 @@ public:
         }
     }
 
+    inline const std::vector< std::vector<int> >& incremental_active_set() const
+    {
+        return m_act_set;
+    }
+
     // Return the incremental active sets to R, mostly for debugging
-    inline Rcpp::List active_set_to_r() const
+    inline Rcpp::List incremental_active_set_to_r() const
     {
         const int nlambda = m_act_set.size();
         Rcpp::List res(nlambda);
@@ -152,15 +157,15 @@ public:
 
         return res;
     }
-    inline Rcpp::IntegerVector active_set_flatten_to_r() const
+    inline Rcpp::IntegerVector flattened_active_set_to_r() const
     {
-        return Rcpp::wrap(flatten_act_set());
+        return Rcpp::wrap(flattened_active_set());
     }
 
     // Compute the largest submatrix (the one associated with the smallest lambda)
     inline std::vector<int> compute_submatrix(SymMat& sub_mat)
     {
-        std::vector<int> act = flatten_act_set();
+        std::vector<int> act = flattened_active_set();
         const int pa = act.size();
         MatrixXd sub_mat_data(pa, pa);
 
