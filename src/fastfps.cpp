@@ -217,10 +217,10 @@ List fastfps(MapMat S, int d, double lambda,
     ActiveSet act_set(S);
     act_set.analyze_pattern();
     act_set.find_active(d, lambdas);
-    SymMat Smat;
-    std::vector<int> act_flatten = act_set.compute_submatrix(Smat);
 
     // Submatrix
+    SymMat Smat;
+    std::vector<int> act_flatten = act_set.compute_submatrix(Smat);
     const int p = Smat.dim();
     if(verbose)
         Rcpp::Rcout << "Reduced active set size to " << p << std::endl;
@@ -313,9 +313,7 @@ List fastfps(MapMat S, int d, double lambda,
         const double xnorm = x.norm();
         const double radius = std::sqrt(double(d));
         if(xnorm > radius)
-        {
-            x.storage().topLeftCorner(p, p) /= (xnorm / radius);
-        }
+            x.scale(radius / xnorm);
 
         // Record elapsed time and objective function values
         time2 = get_wall_time();

@@ -89,6 +89,13 @@ public:
         m_n = n;
     }
 
+    // Scaling
+    // x *= s
+    inline void scale(double s)
+    {
+        m_data.topLeftCorner(m_n, m_n).triangularView<Eigen::Lower>() *= s;
+    }
+
     // Addition - version 1
     // x += gamma*z
     inline void add(double gamma, const SymMat& zmat)
