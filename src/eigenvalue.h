@@ -36,8 +36,7 @@ inline void eigs_sparse_both_ends_spectra(
     const dgCMatrix& xsp, VectorXd& evals, MatrixXd& evecs, double eps = 1e-6
 )
 {
-    dgCMatrixOp op(xsp);
-    Spectra::SymEigsSolver<double, Spectra::BOTH_ENDS, dgCMatrixOp> eigs(&op, 2, 10);
+    Spectra::SymEigsSolver<double, Spectra::BOTH_ENDS, const dgCMatrix> eigs(&xsp, 2, 10);
     eigs.init();
     eigs.compute(1000, eps);
     evals.noalias() = eigs.eigenvalues();
@@ -54,7 +53,7 @@ inline void sp_mat_vec(
     void* x, PRIMME_INT* ldx, void* y, PRIMME_INT* ldy,
     int* blockSize, primme_params* primme, int* err)
 {
-    dgCMatrixOp* op = (dgCMatrixOp*) primme->matrix;
+    const dgCMatrix* xsp = reinterpret_cast<const dgCMatrix*>(primme->matrix);
 
     double* xvec;     /* pointer to i-th input vector x */
     double* yvec;     /* pointer to i-th output vector y */
@@ -64,7 +63,7 @@ inline void sp_mat_vec(
         xvec = (double*) x + *ldx * i;
         yvec = (double*) y + *ldy * i;
 
-        op->perform_op(xvec, yvec);
+        xsp->perform_op(xvec, yvec);
     }
     *err = 0;
 }
@@ -76,7 +75,6 @@ inline void eigs_sparse_both_ends_primme(
 )
 {
     const int n = xsp.rows();
-    dgCMatrixOp op(xsp);
     double resid[2 * N];
 
     primme_params primme;
@@ -91,7 +89,8 @@ inline void eigs_sparse_both_ends_primme(
     primme.iseed[1] = 1;
     primme.iseed[2] = 2;
     primme.iseed[3] = 3;
-    primme.matrix = &op;
+    // Unfortunately PRIMME requires a void*
+    primme.matrix = const_cast<void*>(reinterpret_cast<const void*>(&xsp));
 
     primme_set_method(PRIMME_DEFAULT_MIN_TIME, &primme);
     int ret = dprimme(&evals[0], evecs.data(), &resid[0], &primme);

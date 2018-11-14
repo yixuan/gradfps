@@ -24,6 +24,7 @@ public:
     }
 
     inline int rows() const { return m_n; }
+    inline int cols() const { return m_n; }
 
     // Construct the matrix by soft-thresholding a symmetrix matrix x
     inline void soft_thresh(const SymMat& x, double lambda)
@@ -88,27 +89,13 @@ public:
             }
         }
     }
-};
 
-// Compute matrix-vector multiplication
-class dgCMatrixOp
-{
-private:
-    const int m_n;
-    MapConstSpMat m_mat;
-
-public:
-    dgCMatrixOp(const dgCMatrix& mat) :
-        m_n(mat.rows()), m_mat(mat.to_spmat())
-    {}
-
-    inline int rows() const { return m_n; }
-    inline int cols() const { return m_n; }
+    // Eigen solver operator - computing matrix-vector multiplication
     inline void perform_op(const double* x_in, double* y_out) const
     {
         MapConstVec x(x_in,  m_n);
         MapVec      y(y_out, m_n);
-        y.noalias() = m_mat.selfadjointView<Eigen::Lower>() * x;
+        y.noalias() = to_spmat().selfadjointView<Eigen::Lower>() * x;
     }
 };
 

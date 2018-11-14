@@ -191,7 +191,7 @@ public:
         return std::sqrt(diag + 2 * off_diag);
     }
 
-    // Eigen solver operators
+    // Eigen solver operator - computing matrix-vector multiplication
     inline int rows() const { return m_n; }
     inline int cols() const { return m_n; }
     inline void perform_op(const double* x_in, double* y_out) const
