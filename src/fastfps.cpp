@@ -214,11 +214,11 @@ List fastfps(MapMat S, int d, double lambda,
     VectorXd lambdas(1);
     lambdas[0] = lambda;
 
-    ActiveSet actset(S);
-    actset.analyze_pattern();
-    actset.find_active(d, lambdas);
+    ActiveSet act_set(S);
+    act_set.analyze_pattern();
+    act_set.find_active(d, lambdas);
     SymMat Smat;
-    std::vector<int> act = actset.compute_submatrix(Smat);
+    std::vector<int> act_flatten = act_set.compute_submatrix(Smat);
 
     // Submatrix
     const int p = Smat.dim();
@@ -226,7 +226,7 @@ List fastfps(MapMat S, int d, double lambda,
         Rcpp::Rcout << "Reduced active set size to " << p << std::endl;
     IntegerVector act_ind(p);
     for(int i = 0; i < p; i++)
-        act_ind[i] = act[i] + 1;
+        act_ind[i] = act_flatten[i] + 1;
 
     // Adjust mu based on the new active set size
     mu = std::min(mu, std::sqrt(double(p)));
@@ -320,7 +320,7 @@ List fastfps(MapMat S, int d, double lambda,
         // Record elapsed time and objective function values
         time2 = get_wall_time();
         // fn_obj.push_back(-Smat.cwiseProduct(x).sum() + lambda * x.cwiseAbs().sum());
-        fn_obj.push_back(fps_objfn(p, x.data(), Smat.data(), lambda));
+        fn_obj.push_back(fps_objfn(Smat, x, lambda));
         time.push_back(time2 - time1);
 
         // Compute exact feasibility loss
