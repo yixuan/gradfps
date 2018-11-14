@@ -2,7 +2,6 @@
 #define FASTFPS_SYM_MAT_H
 
 #include "common.h"
-#include "sparsemat.h"
 
 // Define a structure that represents a symmetric matrix with the following properties:
 // (a) Only read and write the lower triangular part
@@ -11,13 +10,20 @@
 class SymMat
 {
 private:
+    typedef Eigen::VectorXd Vector;
     typedef Eigen::MatrixXd Matrix;
+    typedef Eigen::Map<Vector> MapVec;
+    typedef Eigen::Map<const Vector> MapConstVec;
 
-    const int m_max_n;
-    Matrix    m_data;
-    int       m_n;
+    int     m_max_n;
+    Matrix  m_data;
+    int     m_n;
 
 public:
+    SymMat() :
+        m_max_n(0), m_n(0)
+    {}
+
     SymMat(int max_n, bool allocate = false) :
         m_max_n(max_n), m_n(max_n)
     {
@@ -25,28 +31,62 @@ public:
             m_data.resize(m_max_n, m_max_n);
     }
 
+    // For debugging
+    inline void print() const
+    {
+        const int n = std::min(m_n, 10);
+        Rcpp::Rcout << m_data.topLeftCorner(n, n) << std::endl;
+    }
+
     // Take over an existing matrix
     inline void swap(Matrix& other)
     {
         if(other.rows() != m_max_n || other.cols() != m_max_n)
-            throw std::invalid_argument("matrix size does not match");
+            throw std::invalid_argument("matrix sizes do not match");
+
+        m_data.swap(other);
+    }
+
+    // Swap with another SymMat
+    inline void swap(SymMat& other)
+    {
+        if(other.dim() != m_n || other.max_dim() != m_max_n)
+            throw std::invalid_argument("matrix sizes do not match");
+
+        m_data.swap(other.m_data);
+    }
+
+    // Access to data
+    inline double* data() { return m_data.data(); }
+    inline const double* data() const { return m_data.data(); }
+    inline Matrix& storage() { return m_data; }
+    inline const Matrix& storage() const { return m_data; }
+
+    // Reference to the (i, j) element
+    inline double& ref(int i, int j)
+    {
+        return m_data.data()[j * m_max_n + i];
     }
 
     // Dimensions
-    inline int max_rows() const { return m_max_n; }
-    inline int rows() const { return m_n; }
+    inline int max_dim() const { return m_max_n; }
+    inline int dim() const { return m_n; }
+
+    // Resize
+    // Set max size
+    inline void set_max_dim(int max_n, bool resize = false)
+    {
+        m_max_n = max_n;
+        if(resize)
+            m_data.resize(m_max_n, m_max_n);
+    }
+    // Set actual size
     inline void set_dim(int n)
     {
         if(n > m_max_n)
             throw std::invalid_argument("n exceeds the maximum size");
 
         m_n = n;
-    }
-
-    // Reference to the (i, j) element
-    inline double& ref(int i, int j)
-    {
-        return m_data.data()[j * m_max_n + i];
     }
 
     // Addition - version 1
@@ -110,36 +150,18 @@ public:
         }
     }
 
-    // Apply a rank-r update on a sparse matrix x.
-    // Only the lower triangular part is read and written
-    // x <- xsp + a1 * v1 * v1' + ... + ar * vr * vr'
-    template <int r>
-    void rank_r_update_sparse(const dgCMatrix& xsp, const RefVec& a, const RefMat& v)
+    // Set diagonal elements
+    // x.diag() = alpha * x.diag() + beta * v
+    inline void diag(double alpha, double beta, const Vector& v)
     {
-        if(m_n != xsp.rows())
-            throw std::invalid_argument("matrix sizes do not match");
+        for(int i = 0; i < m_n; i++)
+            ref(i, i) = alpha * ref(i, i) + beta * v[i];
+    }
 
-        double vj[r];
-
-        for(int j = 0; j < m_n; j++)
-        {
-            for(int k = 0; k < r; k++)
-            {
-                vj[k] = a[k] * v.coeff(j, k);
-            }
-            for(int i = j; i < m_n; i++)
-            {
-                double sum = 0.0;
-                for(int k = 0; k < r; k++)
-                {
-                    sum += vj[k] * v.coeff(i, k);
-                }
-                ref(i, j) = sum;
-            }
-        }
-
-        // Add the sparse matrix
-        xsp.add_to(m_data.data(), m_max_n);
+    // Trace
+    inline double trace() const
+    {
+        return m_data.diagonal().head(m_n).sum();
     }
 
     // Frobenius norm
@@ -164,70 +186,16 @@ public:
         return std::sqrt(diag + 2 * off_diag);
     }
 
-    // FPS objective function: -<S, X> + lambda * ||X||_1
-    // Only the lower triangular part is read
-    inline double fps_objfn(const SymMat& smat, double lambda) const
-    {
-        if(m_n != smat.m_n)
-            throw std::invalid_argument("matrix sizes do not match");
-
-        const double* x = m_data.data();
-        const double* x_col_begin = x;
-        const double* x_col_end   = x + m_n;
-
-        const double* s = smat.m_data.data();
-        const double* s_col_begin = s;
-
-        double diag1 = 0.0, diag2 = 0.0;
-        double off_diag1 = 0.0, off_diag2 = 0.0;
-
-        for(int j = 0; j < m_n; j++)
-        {
-            x = x_col_begin + j;
-            s = s_col_begin + j;
-
-            diag1 += (*s) * (*x);
-            diag2 += std::abs(*x);
-
-            x = x + 1;
-            s = s + 1;
-
-            for(; x < x_col_end; x++, s++)
-            {
-                off_diag1 += (*s) * (*x);
-                off_diag2 += std::abs(*x);
-            }
-
-            x_col_begin += m_max_n;
-            x_col_end   += m_max_n;
-            s_col_begin += smat.m_max_n;
-        }
-
-        return -(diag1 + off_diag1 * 2) + lambda * (diag2 + off_diag2 * 2);
-    }
-};
-
-// Compute matrix-vector multiplication
-/*class SymMatOp
-{
-private:
-    const int m_n;
-    MapConstSpMat m_mat;
-
-public:
-    SymMatOp(const SymMat& mat) :
-        m_n(mat.rows()), m_mat(mat.to_spmat())
-    {}
-
+    // Eigen solver operators
     inline int rows() const { return m_n; }
     inline int cols() const { return m_n; }
     inline void perform_op(const double* x_in, double* y_out) const
     {
         MapConstVec x(x_in,  m_n);
         MapVec      y(y_out, m_n);
-        y.noalias() = m_mat.selfadjointView<Eigen::Lower>() * x;
+        y.noalias() = m_data.topLeftCorner(m_n, m_n).selfadjointView<Eigen::Lower>() * x;
     }
-};*/
+};
 
 
 #endif  // FASTFPS_SYM_MAT_H
