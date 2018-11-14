@@ -59,8 +59,6 @@ public:
     // Access to data
     inline double* data() { return m_data.data(); }
     inline const double* data() const { return m_data.data(); }
-    inline Matrix& storage() { return m_data; }
-    inline const Matrix& storage() const { return m_data; }
 
     // Reference to the (i, j) element
     inline double& ref(int i, int j)
@@ -157,12 +155,12 @@ public:
         }
     }
 
-    // Set diagonal elements
-    // x.diag() = alpha * x.diag() + beta * v
-    inline void diag(double alpha, double beta, const Vector& v)
+    // Shift diagonal elements by a constant
+    // x.diag() += shift
+    inline void diag_add(double shift)
     {
         for(int i = 0; i < m_n; i++)
-            ref(i, i) = alpha * ref(i, i) + beta * v[i];
+            ref(i, i) += shift;
     }
 
     // Trace

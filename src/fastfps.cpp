@@ -248,7 +248,6 @@ List fastfps(MapMat S, int d, double lambda,
     VectorXd evals(2 * N);
     VectorXd evals_new(2 * N);
     MatrixXd evecs(p, 2 * N);
-    VectorXd diag(p);
 
     double alpha = 0.0;
     double time1, time2;
@@ -279,14 +278,12 @@ List fastfps(MapMat S, int d, double lambda,
         // Trace shrinkage
         const double tbar = x.trace() / p;
         const double tr_shift = double(d) / double(p) - tbar;
-        diag.array() = x.storage().diagonal().head(p).array() + tr_shift;
         const double beta = alpha * mu / std::sqrt(double(p)) / std::abs(tr_shift);
-        if(beta >= 1.0)
-        {
-            x.diag(0.0, 1.0, diag);
-        } else {
-            x.diag(1.0 - beta, beta, diag);
-        }
+        // d' = d + s, where d is the original diagonal elements, and s is the shift
+        // If beta >= 1, d <- d' = d + s
+        // Otherwise, d <- (1 - beta) * d + beta * d' = d + beta * s
+        // In a single formula, d <- d + min(beta, 1) * s
+        x.diag_add(std::min(beta, 1.0) * tr_shift);
 
         // Compute (approximate) feasibility loss
         double feas1 = 0.0;
@@ -312,6 +309,7 @@ List fastfps(MapMat S, int d, double lambda,
         }
         const double xnorm = x.norm();
         const double radius = std::sqrt(double(d));
+        // Scale to an L2 ball if too large
         if(xnorm > radius)
             x.scale(radius / xnorm);
 
