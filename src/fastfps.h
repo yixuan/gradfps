@@ -3,13 +3,16 @@
 
 #include "common.h"
 #include "sparsemat.h"
+#include "symmat.h"
 #include "eigenvalue.h"
 
 // Initial guess using partial eigen decomposition
-inline void initial_guess(const MapMat& S, int d, MatrixXd& x)
+inline void initial_guess(const SymMat& S, int d, SymMat& x)
 {
     MatrixXd evecs = eigs_dense_largest_spectra(S, d);
-    x.noalias() = evecs * evecs.transpose();
+    MatrixXd proj(S.dim(), S.dim());
+    proj.noalias() = evecs * evecs.transpose();
+    x.swap(proj);
 }
 
 // Thresholding of eigenvalues
@@ -26,93 +29,84 @@ inline double lambda_min_thresh(double x, double thresh)
     ((x > -thresh) ? 0.0 : (x + thresh));
 }
 
-// Apply a rank-2 update on a sparse matrix x.
-// Only the lower triangular part is read and written
-// res <- x + a1 * v1 * v1' + a2 * v2 * v2'
-inline void rank2_update_sparse(
-    const dgCMatrix& x, double a1, const RefVec& v1, double a2, const RefVec& v2, MatrixXd& res
-)
+// FPS objective function: -<S, X> + lambda * ||X||_1
+// Only the lower triangular part is read
+inline double fps_objfn(const SymMat& smat, const SymMat& xmat, double lambda)
 {
-    const int p = x.rows();
-    res.resize(p, p);
+    const int sn = smat.dim();
+    const int smaxn = smat.max_dim();
+    const int xn = xmat.dim();
+    const int xmaxn = xmat.max_dim();
 
-    const double a1_abs = std::abs(a1);
-    const double a2_abs = std::abs(a2);
-    const double* v1p = v1.data();
-    const double* v2p = v2.data();
+    if(sn != xn)
+        throw std::invalid_argument("matrix sizes do not match");
 
-    const double eps = 1e-6;
+    const double* x = xmat.data();
+    const double* x_col_begin = x;
+    const double* x_col_end   = x + xn;
 
-    // If both a1 and a2 are zero, simply add x to a zero matrix
-    if(a1_abs <= eps && a2_abs <= eps)
+    const double* s = smat.data();
+    const double* s_col_begin = s;
+
+    double diag1 = 0.0, diag2 = 0.0;
+    double off_diag1 = 0.0, off_diag2 = 0.0;
+
+    for(int j = 0; j < xn; j++)
     {
-        res.setZero();
-    } else if(a1_abs <= eps && a2_abs > eps) {          // a1 == 0, a2 != 0
-        for(int j = 0; j < p; j++)
+        x = x_col_begin + j;
+        s = s_col_begin + j;
+
+        diag1 += (*s) * (*x);
+        diag2 += std::abs(*x);
+
+        x = x + 1;
+        s = s + 1;
+
+        for(; x < x_col_end; x++, s++)
         {
-            const double v2j = a2 * v2p[j];
-            for(int i = j; i < p; i++)
-            {
-                res.coeffRef(i, j) = v2j * v2p[i];
-            }
+            off_diag1 += (*s) * (*x);
+            off_diag2 += std::abs(*x);
         }
-    } else if(a1_abs > eps && a2_abs <= eps) {          // a1 != 0, a2 == 0
-        for(int j = 0; j < p; j++)
-        {
-            const double v1j = a1 * v1p[j];
-            for(int i = j; i < p; i++)
-            {
-                res.coeffRef(i, j) = v1j * v1p[i];
-            }
-        }
-    } else {                                            // a1 != 0, a2 != 0
-        for(int j = 0; j < p; j++)
-        {
-            const double v1j = a1 * v1p[j];
-            const double v2j = a2 * v2p[j];
-            for(int i = j; i < p; i++)
-            {
-                res.coeffRef(i, j) = v1j * v1p[i] + v2j * v2p[i];
-            }
-        }
+
+        x_col_begin += xmaxn;
+        x_col_end   += xmaxn;
+        s_col_begin += smaxn;
     }
 
-    // Add the sparse matrix
-    x.add_to(res.data());
+    return -(diag1 + off_diag1 * 2) + lambda * (diag2 + off_diag2 * 2);
 }
 
-// Apply a rank-2 update on a sparse matrix x.
+// Apply a rank-r update on a sparse matrix x.
 // Only the lower triangular part is read and written
-// res <- x + a1 * v1 * v1' + ... + ar * vr * vr'
+// x <- xsp + a1 * v1 * v1' + ... + ar * vr * vr'
 template <int r>
-void rank_r_update_sparse(
-    const dgCMatrix& x, const RefVec& a, const RefMat& v, MatrixXd& res
-)
+void rank_r_update_sparse(SymMat& x, const dgCMatrix& xsp, const RefVec& a, const RefMat& v)
 {
-    const int p = x.rows();
-    res.resize(p, p);
+    const int xn = x.dim();
+    if(xn != xsp.rows())
+        throw std::invalid_argument("matrix sizes do not match");
 
     double vj[r];
 
-    for(int j = 0; j < p; j++)
+    for(int j = 0; j < xn; j++)
     {
         for(int k = 0; k < r; k++)
         {
             vj[k] = a[k] * v.coeff(j, k);
         }
-        for(int i = j; i < p; i++)
+        for(int i = j; i < xn; i++)
         {
             double sum = 0.0;
             for(int k = 0; k < r; k++)
             {
                 sum += vj[k] * v.coeff(i, k);
             }
-            res.coeffRef(i, j) = sum;
+            x.ref(i, j) = sum;
         }
     }
 
     // Add the sparse matrix
-    x.add_to(res.data());
+    xsp.add_to(x);
 }
 
 // x += alpha*x + beta*y + gamma*z

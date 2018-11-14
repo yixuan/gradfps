@@ -2,6 +2,7 @@
 #define FASTFPS_ACTIVE_H
 
 #include "common.h"
+#include "symmat.h"
 #include <vector>
 
 class Triple
@@ -33,7 +34,6 @@ private:
     ConstMapMat                      m_mat;
     std::vector<Triple>              m_pattern;
     std::vector< std::vector<int> >  m_act_set;
-    Eigen::MatrixXd                  m_sub_mat;
 
     // Find max absolute value in {x[0], ..., x[p-1]} \ {x[j]}
     inline double max_abs_excluding_j(const double* x, int j) const
@@ -158,20 +158,27 @@ public:
     }
 
     // Compute the largest submatrix (the one associated with the smallest lambda)
-    inline void compute_submatrix()
+    inline std::vector<int> compute_submatrix(SymMat& sub_mat)
     {
         std::vector<int> act = flatten_act_set();
         const int pa = act.size();
-        m_sub_mat.resize(pa, pa);
+        sub_mat.set_max_dim(pa, false);
+        sub_mat.set_dim(pa);
+        MatrixXd sub_mat_data(pa, pa);
 
         // We ony write the lower triangular part
         for(int j = 0; j < pa; j++)
         {
             for(int i = j; i < pa; i++)
             {
-                m_sub_mat.coeffRef(i, j) = m_mat.coeff(act[i], act[j]);
+                sub_mat_data.coeffRef(i, j) = m_mat.coeff(act[i], act[j]);
             }
         }
+
+        // Transfer data to sub_mat
+        sub_mat.swap(sub_mat_data);
+
+        return act;
     }
 };
 

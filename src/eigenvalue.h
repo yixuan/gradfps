@@ -3,18 +3,18 @@
 
 #include "common.h"
 #include "sparsemat.h"
+#include "symmat.h"
 #include <Spectra/SymEigsSolver.h>
 #include <Spectra/MatOp/SparseSymMatProd.h>
 #include <primme.h>
 
 // proj = V * V', where V contains the k eigenvectors associated with the largest eigenvalues
 inline MatrixXd eigs_dense_largest_spectra(
-    const MapMat& x, int k, double eps = 1e-3
+    const SymMat& x, int k, double eps = 1e-3
 )
 {
     const int ncv = std::max(10, 2 * k + 1);
-    Spectra::DenseSymMatProd<double> op(x);
-    Spectra::SymEigsSolver< double, Spectra::LARGEST_ALGE, Spectra::DenseSymMatProd<double> > eigs(&op, k, ncv);
+    Spectra::SymEigsSolver<double, Spectra::LARGEST_ALGE, const SymMat> eigs(&x, k, ncv);
     eigs.init();
     eigs.compute(1000, eps);
     return eigs.eigenvectors();
@@ -22,11 +22,10 @@ inline MatrixXd eigs_dense_largest_spectra(
 
 // Largest and smallest eigenvalues of a dense matrix x
 inline void eigs_dense_both_ends_spectra(
-    const MatrixXd& x, VectorXd& evals, double eps = 1e-6
+    const SymMat& x, VectorXd& evals, double eps = 1e-6
 )
 {
-    Spectra::DenseSymMatProd<double> op(x);
-    Spectra::SymEigsSolver< double, Spectra::BOTH_ENDS, Spectra::DenseSymMatProd<double> > eigs(&op, 2, 10);
+    Spectra::SymEigsSolver<double, Spectra::BOTH_ENDS, const SymMat> eigs(&x, 2, 10);
     eigs.init();
     eigs.compute(1000, eps);
     evals.noalias() = eigs.eigenvalues();
