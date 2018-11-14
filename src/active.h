@@ -162,8 +162,6 @@ public:
     {
         std::vector<int> act = flatten_act_set();
         const int pa = act.size();
-        sub_mat.set_max_dim(pa, false);
-        sub_mat.set_dim(pa);
         MatrixXd sub_mat_data(pa, pa);
 
         // We ony write the lower triangular part
@@ -177,6 +175,7 @@ public:
 
         // Transfer data to sub_mat
         sub_mat.swap(sub_mat_data);
+        sub_mat.set_dim(pa);
 
         return act;
     }

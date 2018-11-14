@@ -15,20 +15,20 @@ private:
     typedef Eigen::Map<Vector> MapVec;
     typedef Eigen::Map<const Vector> MapConstVec;
 
-    int     m_max_n;
-    Matrix  m_data;
-    int     m_n;
+    int     m_lead_dim;  // leading dimension
+    Matrix  m_data;      // storage
+    int     m_n;         // actual dimension
 
 public:
     SymMat() :
-        m_max_n(0), m_n(0)
+        m_lead_dim(0), m_n(0)
     {}
 
     SymMat(int max_n, bool allocate = false) :
-        m_max_n(max_n), m_n(max_n)
+        m_lead_dim(max_n), m_n(max_n)
     {
         if(allocate)
-            m_data.resize(m_max_n, m_max_n);
+            m_data.resize(m_lead_dim, m_lead_dim);
     }
 
     // For debugging
@@ -39,18 +39,22 @@ public:
     }
 
     // Take over an existing matrix
+    // Leading dimension is set to the new size
+    // Actual dimension remains the same
     inline void swap(Matrix& other)
     {
-        if(other.rows() != m_max_n || other.cols() != m_max_n)
+        if(other.rows() < m_lead_dim || other.rows() != other.cols())
             throw std::invalid_argument("matrix sizes do not match");
 
+        m_lead_dim = other.rows();
         m_data.swap(other);
     }
 
     // Swap with another SymMat
+    // Leading and actual dimensions should match
     inline void swap(SymMat& other)
     {
-        if(other.dim() != m_n || other.max_dim() != m_max_n)
+        if(other.dim() != m_n || other.lead_dim() != m_lead_dim)
             throw std::invalid_argument("matrix sizes do not match");
 
         m_data.swap(other.m_data);
@@ -63,25 +67,18 @@ public:
     // Reference to the (i, j) element
     inline double& ref(int i, int j)
     {
-        return m_data.data()[j * m_max_n + i];
+        return m_data.data()[j * m_lead_dim + i];
     }
 
     // Dimensions
-    inline int max_dim() const { return m_max_n; }
+    inline int lead_dim() const { return m_lead_dim; }
     inline int dim() const { return m_n; }
 
     // Resize
-    // Set max size
-    inline void set_max_dim(int max_n, bool resize = false)
-    {
-        m_max_n = max_n;
-        if(resize)
-            m_data.resize(m_max_n, m_max_n);
-    }
     // Set actual size
     inline void set_dim(int n)
     {
-        if(n > m_max_n)
+        if(n > m_lead_dim)
             throw std::invalid_argument("n exceeds the maximum size");
 
         m_n = n;
@@ -116,9 +113,9 @@ public:
             for(; x < x_col_end; x++, z++)
                 (*x) += gamma * (*z);
 
-            x_col_begin += m_max_n;
-            x_col_end   += m_max_n;
-            z_col_begin += zmat.m_max_n;
+            x_col_begin += m_lead_dim;
+            x_col_end   += m_lead_dim;
+            z_col_begin += zmat.m_lead_dim;
         }
     }
 
@@ -148,10 +145,10 @@ public:
             for(; x < x_col_end; x++, y++, z++)
                 (*x) += alpha * (*x) + beta * (*y) + gamma * (*z);
 
-            x_col_begin += m_max_n;
-            x_col_end   += m_max_n;
-            y_col_begin += ymat.m_max_n;
-            z_col_begin += zmat.m_max_n;
+            x_col_begin += m_lead_dim;
+            x_col_end   += m_lead_dim;
+            y_col_begin += ymat.m_lead_dim;
+            z_col_begin += zmat.m_lead_dim;
         }
     }
 
@@ -178,7 +175,7 @@ public:
         double diag = 0.0;
         double off_diag = 0.0;
 
-        for(int j = 0; j < m_n; j++, col_begin += m_max_n, col_end += m_max_n)
+        for(int j = 0; j < m_n; j++, col_begin += m_lead_dim, col_end += m_lead_dim)
         {
             x = col_begin + j;
             diag += (*x) * (*x);

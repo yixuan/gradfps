@@ -34,9 +34,9 @@ inline double lambda_min_thresh(double x, double thresh)
 inline double fps_objfn(const SymMat& smat, const SymMat& xmat, double lambda)
 {
     const int sn = smat.dim();
-    const int smaxn = smat.max_dim();
+    const int sldim = smat.lead_dim();
     const int xn = xmat.dim();
-    const int xmaxn = xmat.max_dim();
+    const int xldim = xmat.lead_dim();
 
     if(sn != xn)
         throw std::invalid_argument("matrix sizes do not match");
@@ -68,9 +68,9 @@ inline double fps_objfn(const SymMat& smat, const SymMat& xmat, double lambda)
             off_diag2 += std::abs(*x);
         }
 
-        x_col_begin += xmaxn;
-        x_col_end   += xmaxn;
-        s_col_begin += smaxn;
+        x_col_begin += xldim;
+        x_col_end   += xldim;
+        s_col_begin += sldim;
     }
 
     return -(diag1 + off_diag1 * 2) + lambda * (diag2 + off_diag2 * 2);
