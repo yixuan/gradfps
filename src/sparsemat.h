@@ -9,7 +9,7 @@
 class dgCMatrix
 {
 private:
-    const int m_n;
+    int m_n;
     std::vector<int> m_i;
     std::vector<int> m_p;
     std::vector<double> m_x;
@@ -25,6 +25,22 @@ public:
 
     inline int rows() const { return m_n; }
     inline int cols() const { return m_n; }
+
+    // Resize matrix
+    // If new size is larger, we only need to append zeros to m_p, and existing
+    // data can be preseved. Otherwise we destroy the existing data
+    inline void resize(int n)
+    {
+        m_n = n;
+        m_p.resize(n + 1);
+
+        if(n < m_n)
+        {
+            m_i.clear();
+            m_x.clear();
+            std::fill(m_p.begin(), m_p.end(), 0);
+        }
+    }
 
     // Construct the matrix by soft-thresholding a symmetrix matrix x
     inline void soft_thresh(const SymMat& x, double lambda)
