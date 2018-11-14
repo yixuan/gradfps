@@ -1,7 +1,8 @@
-#ifndef FASTFPS_SPARSEMAT_H
-#define FASTFPS_SPARSEMAT_H
+#ifndef FASTFPS_SPARSE_MAT_H
+#define FASTFPS_SPARSE_MAT_H
 
 #include "common.h"
+#include "symmat.h"
 
 // Define a structure that mimics the dgCMatrix class
 // Assume that the matrix is lower-triangular
@@ -25,17 +26,20 @@ public:
     inline int rows() const { return m_n; }
 
     // Construct the matrix by soft-thresholding a symmetrix matrix x
-    // Only the lower triangular part is read and written
-    inline void soft_thresh(const double* x, double lambda)
+    inline void soft_thresh(const SymMat& x, double lambda)
     {
+        if(x.dim() != m_n)
+            throw std::invalid_argument("matrix sizes do not match");
+
         m_i.clear();
         m_p.clear();
         m_p.push_back(0);
         m_x.clear();
 
-        const double* col_begin = x;
+        const double* col_begin = x.data();
         const double* col_end = col_begin + m_n;
-        for(int j = 0; j < m_n; j++, col_begin += m_n, col_end += m_n)
+        const int xmaxn = x.max_dim();
+        for(int j = 0; j < m_n; j++, col_begin += xmaxn, col_end += xmaxn)
         {
             int col_nnz = 0;
             for(const double* xptr = col_begin + j; xptr < col_end; xptr++)
@@ -65,13 +69,17 @@ public:
         return MapConstSpMat(m_n, m_n, m_p[m_n], &m_p[0], &m_i[0], &m_x[0]);
     }
 
-    // Add the sparse matrix to a dense matrix
-    inline void add_to(double* x) const
+    // Add the sparse matrix to a symmetric matrix
+    inline void add_to(SymMat& x) const
     {
-        double* col_begin = x;
+        if(x.dim() != m_n)
+            throw std::invalid_argument("matrix sizes do not match");
+
+        double* col_begin = x.data();
+        const int xmaxn = x.max_dim();
         const double* dat_ptr = &m_x[0];
         const int* row_ptr = &m_i[0];
-        for(int j = 0; j < m_n; j++, col_begin += m_n)
+        for(int j = 0; j < m_n; j++, col_begin += xmaxn)
         {
             const int col_nnz = m_p[j + 1] - m_p[j];
             for(int k = 0; k < col_nnz; k++, dat_ptr++, row_ptr++)
@@ -105,4 +113,4 @@ public:
 };
 
 
-#endif  // FASTFPS_SPARSEMAT_H
+#endif  // FASTFPS_SPARSE_MAT_H
