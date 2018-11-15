@@ -24,7 +24,7 @@ List fastfps_path(
     // Create the lambda sequence
     VectorXd lambdas(nlambda);
     const double llmin = std::log(lambda_min), llmax = std::log(lambda_max);
-    const double step = (llmax - llmin) / (nlambda - 1);
+    const double step = (nlambda <= 1) ? 0.0 : (llmax - llmin) / (nlambda - 1);
     for(int i = 0; i < nlambda; i++)
         lambdas[i] = std::exp(llmax - step * i);
 
@@ -58,7 +58,7 @@ List fastfps_path(
     // Eigenvalue computation
     // Number of eigenvalue pairs to compute, i.e.,
     // the largest N and smallest N eigenvalues
-    const int N = 1;
+    const int N = 2;
     VectorXd evals(2 * N);
     VectorXd evals_new(2 * N);
     // Size of eigenvectors depend on the actual dimension
