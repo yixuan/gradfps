@@ -58,7 +58,7 @@ List fastfps_path(
     // Eigenvalue computation
     // Number of eigenvalue pairs to compute, i.e.,
     // the largest N and smallest N eigenvalues
-    const int N = 2;
+    const int N = 1;
     VectorXd evals(2 * N);
     VectorXd evals_new(2 * N);
     // Size of eigenvectors depend on the actual dimension
@@ -253,7 +253,7 @@ List fastfps(MapMat S, int d, double lambda,
     // Eigenvalue computation
     // Number of eigenvalue pairs to compute, i.e.,
     // the largest N and smallest N eigenvalues
-    const int N = 2;
+    const int N = 1;
     VectorXd evals(2 * N);
     VectorXd evals_new(2 * N);
     MatrixXd evecs(p, 2 * N);

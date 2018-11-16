@@ -32,11 +32,14 @@ inline void eigs_dense_both_ends_spectra(
 }
 
 // Largest and smallest eigenvalues of a sparse matrix xsp
+template <int N>
 inline void eigs_sparse_both_ends_spectra(
     const dgCMatrix& xsp, RefVec evals, RefMat evecs, double eps = 1e-6
 )
 {
-    Spectra::SymEigsSolver<double, Spectra::BOTH_ENDS, const dgCMatrix> eigs(&xsp, 2, 10);
+    const int nev = 2 * N;
+    const int ncv = std::max(10, 4 * N + 1);
+    Spectra::SymEigsSolver<double, Spectra::BOTH_ENDS, const dgCMatrix> eigs(&xsp, nev, ncv);
     eigs.init();
     eigs.compute(1000, eps);
     evals.noalias() = eigs.eigenvalues();
