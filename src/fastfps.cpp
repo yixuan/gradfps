@@ -101,7 +101,11 @@ List fastfps_internal(
         for(i = 0; i < maxiter; i++)
         {
             if(verbose)
-                Rcpp::Rcout << "==> Iter " << i << std::endl;
+            {
+                Rcpp::Rcout << "=";
+                if(i % 50 == 49)
+                    Rcpp::Rcout << " " << i + 1 << std::endl;
+            }
 
             time1 = get_wall_time();
             alpha = alpha0 / (l + 1.0) / (i + 1.0);
@@ -197,6 +201,9 @@ List fastfps_internal(
             Rcpp::Named("niter")      = std::min(i + 1, maxiter),
             Rcpp::Named("time")       = time
         );
+
+        if(verbose)
+            Rcpp::Rcout << std::endl;
     }
 
     return List::create(
