@@ -108,7 +108,7 @@ List fastfps_internal(
             {
                 Rcpp::Rcout << "=";
                 if(i % 50 == 49)
-                    Rcpp::Rcout << " " << i + 1 << std::endl;
+                    Rcpp::Rcout << " " << i + 1 << " iterations"<< std::endl;
             }
 
             time1 = get_wall_time();
@@ -207,7 +207,7 @@ List fastfps_internal(
         );
 
         if(verbose)
-            Rcpp::Rcout << std::endl;
+            Rcpp::Rcout << std::endl << std::endl;
     }
 
     return List::create(
