@@ -20,18 +20,39 @@ fastfps = function(
 
 coef.fastfps = function(object, lambda, ...)
 {
-    lambda_id = which.min(abs(lambda - object$lambdas))
-    sol = object$solution[[lambda_id]]
+    # Check the range of lambda
+    lambda = lambda[1]
+    nlambda = length(object$lambdas)
+    lrange = range(object$lambdas)
+    if(lambda < lrange[1] || lambda > lrange[2])
+        stop(sprintf("lambda out of range [%f, %f]", lrange[1], lrange[2]))
 
+    # Find two lambdas l1 >= l2 such that l1 >= lambda >= l2
+    id = findInterval(lambda, sort(object$lambdas))
+    l2_id = nlambda - id + 1
+    l1_id = max(l2_id - 1, 1)
+    l1 = object$lambdas[l1_id]
+    l2 = object$lambdas[l2_id]
+
+    # Interpolate between two projection matrices
+    # Since l1 >= l2, proj2 will have a larger dimension, so we first enlarge proj1
+    act_size = object$solution[[l2_id]]$act_size
+    proj1 = object$solution[[l1_id]]$projection
+    proj1 = sparseMatrix(i = proj1@i, p = proj1@p, x = proj1@x,
+                         dims = c(act_size, act_size), index1 = FALSE)
+    proj2 = object$solution[[l2_id]]$projection
+    w = ifelse(l1 == l2, 1.0, (lambda - l2) / (l1 - l2))
+    proj_act = w * proj1 + (1 - w) * proj2
+
+    # Expand and reorder the projection matrix
     p = object$dim
-    act_id = object$active[seq_len(sol$act_size)]
+    act_id = object$active[seq_len(act_size)]
+    proj = reorder_projection(p, proj_act, act_id)
 
-    proj = Matrix(0, p, p)
-    proj[act_id, act_id] = forceSymmetric(sol$projection, "L")
-
+    # Eigenvectors
     evecs = matrix(0, p, object$rank)
-    evecs_act = eigs_sym(sol$projection, object$rank, which = "LA")$vectors
+    evecs_act = eigs_sym(proj_act, object$rank, which = "LA")$vectors
     evecs[act_id, ] = round(evecs_act, 6)
 
-    list(proj = proj, evecs = evecs)
+    list(projection = proj, eigenvectors = evecs)
 }

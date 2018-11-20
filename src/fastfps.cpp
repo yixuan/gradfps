@@ -23,9 +23,13 @@ List fastfps_internal(
 
     // Create the lambda sequence
     VectorXd lambdas(nlambda);
+    lambdas[0] = lambda_max;
+    lambdas[nlambda - 1] = lambda_min;
     const double llmin = std::log(lambda_min), llmax = std::log(lambda_max);
-    const double step = (nlambda <= 1) ? 0.0 : (llmax - llmin) / (nlambda - 1);
-    for(int i = 0; i < nlambda; i++)
+    // nlambda has to be >=3 in order to enter the for-loop,
+    // so we don't worry about the 0/0 issue
+    const double step = (llmax - llmin) / (nlambda - 1);
+    for(int i = 1; i < nlambda - 1; i++)
         lambdas[i] = std::exp(llmax - step * i);
 
     // Compute active set
@@ -213,4 +217,45 @@ List fastfps_internal(
         Rcpp::Named("lambdas")  = lambdas,
         Rcpp::Named("solution") = res
     );
+}
+
+
+// Expand a sparse projection matrix to dimension p and reorder it according
+// to its active set index
+// [[Rcpp::export]]
+SpMat reorder_projection(int p, MapSpMat proj, IntegerVector act_id)
+{
+    // Check dimension
+    const int p_act = proj.rows();
+    if(p_act > p || p_act != proj.cols() || p_act != act_id.length())
+        Rcpp::stop("matrix dimensions do not match");
+
+    // Result matrix
+    SpMat res(p, p);
+
+    // Iterate over elements of proj and insert them to res
+    // Note that only the lower triangular part of proj is referenced
+    // Also note that act_id is one-based
+    for(int j = 0; j < p_act; j++)
+    {
+        for(MapSpMat::InnerIterator it(proj, j); it; ++it)
+        {
+            const int proj_row = it.row();
+            // Ignore upper triangular part
+            if(proj_row < j)
+                continue;
+
+            const int res_row = act_id[proj_row] - 1;
+            const int res_col = act_id[j] - 1;
+            const double res_val = it.value();
+            res.insert(res_row, res_col) = res_val;
+            // Symmetry
+            if(res_row != res_col)
+                res.insert(res_col, res_row) = res_val;
+        }
+    }
+
+    res.makeCompressed();
+
+    return res;
 }
