@@ -1,4 +1,8 @@
 importFrom(Rcpp, evalCpp)
-useDynLib(fastfps, .registration = TRUE)
+importFrom(stats, coef)
+importFrom(RSpectra, eigs_sym)
 
 export(fastfps)
+S3method(coef, fastfps)
+
+useDynLib(fastfps, .registration = TRUE)

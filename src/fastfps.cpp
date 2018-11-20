@@ -207,6 +207,8 @@ List fastfps_internal(
     }
 
     return List::create(
+        Rcpp::Named("dim")      = p0,
+        Rcpp::Named("rank")     = d,
         Rcpp::Named("active")   = act_ind,
         Rcpp::Named("lambdas")  = lambdas,
         Rcpp::Named("solution") = res

@@ -9,5 +9,5 @@ Description: Fast implementation of the Fantope projection and selection
 License: GPL
 Encoding: UTF-8
 LazyData: true
-Imports: Rcpp (>= 0.12.19)
+Imports: stats, Rcpp (>= 0.12.19), RSpectra
 LinkingTo: Rcpp, RcppEigen, RSpectra
