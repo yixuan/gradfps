@@ -2,8 +2,8 @@ importFrom(Rcpp, evalCpp)
 importFrom(stats, coef)
 importFrom(RSpectra, eigs_sym)
 
-importMethodsFrom(Matrix, forceSymmetric, coerce)
-importClassesFrom(Matrix, dgCMatrix, dsCMatrix)
+importMethodsFrom(Matrix, sparseMatrix, coerce)
+importClassesFrom(Matrix, dgCMatrix)
 
 export(fastfps)
 S3method(coef, fastfps)
