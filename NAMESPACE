@@ -1,11 +1,15 @@
 importFrom(Rcpp, evalCpp)
 importFrom(stats, coef)
+importFrom(graphics, plot)
 importFrom(RSpectra, eigs_sym)
+import(ggplot2)
 
-importMethodsFrom(Matrix, sparseMatrix, coerce)
+importFrom(Matrix, sparseMatrix)
+importMethodsFrom(Matrix, coerce)
 importClassesFrom(Matrix, dgCMatrix)
 
-export(fastfps)
+export(fastfps, lambda_range)
 S3method(coef, fastfps)
+S3method(plot, fastfps)
 
 useDynLib(fastfps, .registration = TRUE)

@@ -56,3 +56,35 @@ coef.fastfps = function(object, lambda, ...)
 
     list(projection = proj, eigenvectors = evecs)
 }
+
+plot.fastfps = function(x, ...)
+{
+    sol = x$solution
+    gdat = vector("list", length(sol))
+    lambda = sprintf("%.3f", sapply(sol, function(x) x$lambda))
+    lambda_level = sprintf("%.3f", sort(sapply(sol, function(x) x$lambda), decreasing = TRUE))
+    for(i in seq_along(sol))
+    {
+        obj = sol[[i]]$objfn
+        feas = sol[[i]]$feasfn
+        total = obj + feas
+        iter = seq_len(length(obj))
+        gdat[[i]] = data.frame(
+            fun = c(obj, feas, total),
+            iter = rep(iter, 3),
+            type = rep(c("Objective", "Feasibility", "Total"), each = length(obj)),
+            lambda = lambda[i]
+        )
+    }
+    gdat = do.call(rbind, gdat)
+    gdat$lambda = factor(gdat$lambda, levels = lambda_level)
+
+    ggplot(gdat, aes(x = iter, y = fun)) +
+        geom_line(aes(color = type, group = type)) +
+        scale_color_hue("Function Type") +
+        xlab("Iterations") + ylab("Function Value") +
+        facet_wrap(~lambda, ncol = 4, labeller = "label_both", scales = "free_y") +
+        guides(color = guide_legend(keywidth = 2, keyheight = 2,
+                                    override.aes = list(size = 2))) +
+        theme_bw()
+}
