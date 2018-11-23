@@ -1,2 +1,19 @@
 PKG_CPPFLAGS = -I./include
-PKG_LIBS = -L./lib -lprimme
+PKG_LIBS = -L./primme -lprimme
+
+
+.PHONY: all clean
+
+all: $(SHLIB)
+
+$(SHLIB): primme/libprimme.a
+
+primme/libprimme.a:
+	cd primme && $(MAKE) all CC="$(CC)" AR="$(AR)" CFLAGS="$(ALL_CFLAGS)"
+
+clean:
+	$(RM) *.o
+	$(RM) *.dll
+	$(RM) *.so
+	$(RM) *.dylib
+	cd primme && $(MAKE) clean
