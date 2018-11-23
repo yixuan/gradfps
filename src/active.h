@@ -94,6 +94,11 @@ public:
         std::sort(m_pattern.begin(), m_pattern.end(), triple_comparator);
     }
 
+    inline const std::vector<Triple>& pattern() const
+    {
+        return m_pattern;
+    }
+
     // Assume that lambda is in decreasing order
     // We start from the largest lambda and compute its active set
     // When moving to the next lambda, we keep the previous active set in order,
