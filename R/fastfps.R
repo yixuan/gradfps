@@ -1,6 +1,6 @@
 fastfps = function(
     S, d, lambda_min, lambda_max, nlambda,
-    maxiter, eps_abs, eps_rel, opts
+    maxiter = 500, eps_abs = 1e-3, eps_rel = 1e-3, opts = list()
 )
 {
     p = nrow(S)
