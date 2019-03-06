@@ -34,7 +34,7 @@ view_matrix = function(mat, legend_title = "Coefficient", bar_height = 10, font_
         geom_raster() +
         scale_x_continuous("", breaks = breaks, expand = c(0, 0)) +
         scale_y_reverse("", breaks = breaks, expand = c(0, 0)) +
-        scale_fill_gradientn("Correlation\nCoefficient", colors = colors) +
+        scale_fill_gradientn(legend_title, colors = colors) +
         guides(fill = guide_colorbar(barheight = bar_height)) +
         coord_fixed() +
         theme_bw(base_size = font_size) +
