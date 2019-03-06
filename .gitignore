@@ -2,6 +2,7 @@
 .Rhistory
 .RData
 .Ruserdata
-src/*.o
+src/**/*.a
+src/**/*.o
 src/*.so
 src/*.dll
