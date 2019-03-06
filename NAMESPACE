@@ -12,4 +12,4 @@ export(fastfps, lambda_range, view_cor, view_evec)
 S3method(coef, fastfps)
 S3method(plot, fastfps)
 
-useDynLib(fastfps, .registration = TRUE)
+useDynLib(gradfps, .registration = TRUE)

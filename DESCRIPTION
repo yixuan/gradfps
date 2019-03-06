@@ -1,6 +1,6 @@
-Package: fastfps
+Package: gradfps
 Type: Package
-Title: Fast Fantope Projection and Selection
+Title: Gradient-based Fantope Projection and Selection
 Version: 0.1.0
 Author: Yixuan Qiu
 Maintainer: Yixuan Qiu <yixuanq@gmail.com>
