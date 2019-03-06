@@ -8,7 +8,7 @@ importFrom(Matrix, sparseMatrix)
 importMethodsFrom(Matrix, coerce)
 importClassesFrom(Matrix, dgCMatrix)
 
-export(fastfps, lambda_range, view_cor, view_evec)
+export(fastfps, lambda_range, view_matrix, view_evec)
 S3method(coef, fastfps)
 S3method(plot, fastfps)
 
