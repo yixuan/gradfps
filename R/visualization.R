@@ -41,22 +41,42 @@ view_matrix = function(mat, legend_title = "Coefficient", bar_height = 10, font_
         theme(axis.title = element_blank())
 }
 
-view_evec = function(evecs, bar_height = 6, asp = 0.2, font_size = 20)
+# Visualization of eigenvectors
+view_evec = function(
+    evecs,
+    xlab = "Index of Variables", ylab = "Index of PCs", legend_title = "Factor\nLoading",
+    bar_height = 6, asp = 0.2, font_size = 20
+)
 {
-    v = as.matrix(round(evecs, 6))
+    v = as.matrix(evecs)
+    lo = min(v)
+    hi = max(v)
+    # All values in the range [-r, r]
+    r = max(abs(c(lo, hi)))
 
+    # ggplot2 format
     gdat = data.frame(
         x = as.integer(row(v)),
         y = as.integer(col(v)),
         z = as.numeric(v)
     )
 
+    # Map the color spectrum to [-r, r]
+    ngrid = 1001
+    col_pal = colorRampPalette(c("#67001F", "#B2182B", "#D6604D", "#F4A582",
+                                 "#FDDBC7", "#FFFFFF", "#D1E5F0",
+                                 "#92C5DE", "#4393C3", "#2166AC", "#053061"))(ngrid)
+    col_val = seq(-r, r, length.out = ngrid)
+    lo_ind = findInterval(lo, col_val)
+    hi_ind = findInterval(hi, col_val)
+    colors = col_pal[lo_ind:hi_ind]
+
     ggplot(gdat, aes(x = x, y = y, fill = z)) +
         geom_raster() +
-        scale_x_continuous("Index of Variables", expand = c(0, 0)) +
-        scale_y_reverse("Index of PCs", expand = c(0, 0)) +
-        scale_fill_gradient2("Factor\nLoading", low = "#CD0000", high = "#0000CD") +
-        guides(fill = guide_colourbar(barheight = bar_height)) +
+        scale_x_continuous(xlab, expand = c(0, 0)) +
+        scale_y_reverse(ylab, expand = c(0, 0)) +
+        scale_fill_gradientn(legend_title, colors = colors) +
+        guides(fill = guide_colorbar(barheight = bar_height)) +
         theme_bw(base_size = font_size) +
         theme(aspect.ratio = asp)
 }
