@@ -30,7 +30,7 @@ public:
         m_evals(MaxEvals)
     {}
 
-    inline void init(const RefConstMat& mat, primme_target target = primme_largest)
+    inline void init(const RefConstMat& mat, int num_evals = 1, primme_target target = primme_largest)
     {
         m_n = mat.rows();
         m_mat_data = mat.data();
@@ -41,7 +41,7 @@ public:
         primme_initialize(&m_primme);
         m_primme.matrixMatvec = mat_vec_prod;
         m_primme.n = m_n;
-        m_primme.numEvals = 1;
+        m_primme.numEvals = num_evals;
         m_primme.eps = 1e-6;
         m_primme.target = target;
         m_primme.iseed[0] = 0;
@@ -70,11 +70,11 @@ public:
 
     inline void compute_next()
     {
-        if(m_num_computed >= MaxEvals)
+        if(m_num_computed + m_primme.numEvals > MaxEvals)
             throw std::logic_error("maximum number of eigenvalues computed");
 
         int ret = dprimme(&m_evals[m_num_computed], &m_evecs(0, m_num_computed), m_resid.data(), &m_primme);
-        m_num_computed++;
+        m_num_computed += m_primme.numEvals;
     }
 
     const int num_computed() const { return m_num_computed; }
@@ -111,7 +111,7 @@ NumericMatrix eigmax_thresh(NumericMatrix x, double penalty)
     NumericMatrix res(n, n);
 
     IncrementalEig solver;
-    solver.init(mat, primme_largest);
+    solver.init(mat, 1, primme_largest);
     solver.compute_next();
     const VectorXd& evals = solver.eigenvalues();
 
@@ -147,7 +147,7 @@ NumericMatrix eigmin_thresh(NumericMatrix x, double penalty)
     NumericMatrix res(n, n);
 
     IncrementalEig solver;
-    solver.init(mat, primme_smallest);
+    solver.init(mat, 1, primme_smallest);
     solver.compute_next();
     const VectorXd& evals = solver.eigenvalues();
 
