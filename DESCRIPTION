@@ -10,4 +10,4 @@ License: GPL
 Encoding: UTF-8
 LazyData: true
 Imports: stats, graphics, Matrix, Rcpp (>= 0.12.19), RSpectra, ggplot2
-LinkingTo: Rcpp, RcppEigen, RSpectra
+LinkingTo: Rcpp, RcppEigen, RSpectra, BH
