@@ -61,7 +61,8 @@ MatrixXd prox_fantope(MapMat v, double alpha, MapMat S, int d, int inc, int max_
 
     for(int i = 0; i < max_try; i++)
     {
-        Rcpp::Rcout << i << std::endl;
+        if(i == max_try)
+            Rcpp::Rcout << "=== max_try: " << i << " ===" << std::endl;
         inceig.compute_next();
         const VectorXd& evals = inceig.eigenvalues();
         quadprog_sol(evals.data(), inceig.num_computed(), d, new_evals.data());
