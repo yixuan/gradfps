@@ -60,7 +60,7 @@ public:
 };
 
 // Solve equation c * x^(p - 1) + x - v = 0, c > 0, 1 < p < 2, x > 0, v > 0
-inline double solve_equation(double c, double p, double v)
+inline double solve_equation(double c, double p, double v, double x0)
 {
     // f(x) = c * x^(p - 1) + x is increasing in x, f(1) = c + 1
     // If v >= f(1), solve f(x) = v, 1 < x < v
@@ -69,7 +69,7 @@ inline double solve_equation(double c, double p, double v)
     if(v >= f1)
     {
         // Guess is based on f(x) ~= c + x
-        const double guess = v - c;
+        const double guess = (x0 >= 1.0 && x0 <= v) ? x0: (v - c);
         const double lb = 1.0;
         const double ub = v;
         const int digits = 30;
@@ -85,8 +85,14 @@ inline double solve_equation(double c, double p, double v)
     const double u0 = std::pow(0.1 * c, 1.0 / (r - 1.0));
     const double cu0 = c * u0;
     const double g0 = 1.1 * cu0;
-    double guess = (v <= g0) ? (v / c) : (std::pow(v - 0.9 * cu0, 1.0 / r));
-    guess = std::min(guess, 1.0);
+    double guess = 0.5;
+    if(x0 < 1.0)
+    {
+        guess = std::pow(x0, p - 1.0);
+    } else {
+        guess = (v <= g0) ? (v / c) : (std::pow(v - 0.9 * cu0, p - 1.0));
+        guess = std::min(guess, 1.0);
+    }
     const double lb = 0.0;
     const double ub = 1.0;
     const int digits = 30;
