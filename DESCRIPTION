@@ -11,3 +11,4 @@ Encoding: UTF-8
 LazyData: true
 Imports: stats, graphics, Matrix, Rcpp (>= 0.12.19), RSpectra, ggplot2
 LinkingTo: Rcpp, RcppEigen, RSpectra, BH
+RoxygenNote: 6.1.1

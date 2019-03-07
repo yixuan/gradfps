@@ -1,3 +1,34 @@
+##' Visualization of Matrices
+##'
+##' \code{view_matrix()} visualizes a general matrix by mapping its elements to
+##' colors. \code{view_evec()} visualizes a set of eigenvectors.
+##'
+##' @param mat,evec     The matrix to be visualized.
+##' @param xlab         X-axis label.
+##' @param ylab         Y-axis label.
+##' @param legend_title Title of the colorbar legend.
+##' @param asp          Aspect ratio of the plot.
+##' @param bar_height   Height of the colorbar.
+##' @param font_size    Base font size for the plot.
+##'
+##' @rdname visualization
+##' @author Yixuan Qiu \url{https://statr.me}
+##'
+##' @examples
+##' set.seed(123)
+##' x = matrix(rnorm(200), 10, 20)
+##' view_matrix(x)
+##'
+##' sigma1 = matrix(0.8, 20, 20) + 0.2 * diag(20)
+##' sigma2 = matrix(0.6, 50, 50) + 0.4 * diag(50)
+##' s1 = stats::rWishart(1, 100, sigma1)[, , 1]
+##' s2 = stats::rWishart(1, 100, sigma2)[, , 1]
+##' s = as.matrix(Matrix::bdiag(s1, s2))
+##' view_matrix(s)
+##'
+##' v = eigen(s, symmetric = TRUE)$vectors[, 1:5]
+##' view_evec(v)
+
 # Visualization of a matrix by coloring its coefficients
 view_matrix = function(mat, legend_title = "Coefficient", bar_height = 10, font_size = 20)
 {
@@ -41,11 +72,13 @@ view_matrix = function(mat, legend_title = "Coefficient", bar_height = 10, font_
         theme(axis.title = element_blank())
 }
 
+##' @rdname visualization
+
 # Visualization of eigenvectors
 view_evec = function(
     evecs,
     xlab = "Index of Variables", ylab = "Index of PCs", legend_title = "Factor\nLoading",
-    bar_height = 6, asp = 0.2, font_size = 20
+    asp = 0.2, bar_height = 6, font_size = 20
 )
 {
     v = as.matrix(evecs)
