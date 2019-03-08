@@ -91,6 +91,7 @@ List gradfps_prox_benchmark(MapMat S, MapMat x0, MapMat Pi, int d, double lambda
     std::vector<double> errs;
     std::vector<double> times;
     double t1, t2;
+    int subdim = 2 * d;
 
     for(int i = 0; i < maxiter; i++)
     {
@@ -106,7 +107,9 @@ List gradfps_prox_benchmark(MapMat S, MapMat x0, MapMat Pi, int d, double lambda
         z2.noalias() += lr * S;
         MapConstMat z2m(z2.data(), z2.rows(), z2.cols());
         MapMat newz1m(newz1.data(), newz1.rows(), newz1.cols());
-        prox_fantope_impl(z2m, d, 5 * d, 10, newz1m, verbose);
+        subdim = prox_fantope_impl(z2m, d, subdim, 10, newz1m, verbose);
+        subdim = std::max(5 * d, int(1.5 * subdim));
+        subdim = std::min(subdim, 20 * d);
         newz1.noalias() -= zdiff;
 
         // l1 <- soft_threshold(z1, lr * lambda)
