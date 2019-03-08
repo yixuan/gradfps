@@ -3,7 +3,7 @@
 
 #include "common.h"
 #include "quadprog.h"
-#include "inceig.h"
+#include "inceig_spectra.h"
 
 // min  -lambda'x + 0.5 * ||x||^2
 // s.t. 0 <= xi <= 1
