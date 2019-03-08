@@ -8,6 +8,7 @@ typedef Eigen::VectorXd VectorXd;
 typedef Eigen::Map<MatrixXd> MapMat;
 typedef Eigen::Map<VectorXd> MapVec;
 typedef Eigen::Map<const VectorXd> MapConstVec;
+typedef Eigen::Map<const MatrixXd> MapConstMat;
 typedef Eigen::Ref<VectorXd> RefVec;
 typedef Eigen::Ref<MatrixXd> RefMat;
 typedef Eigen::SparseMatrix<double> SpMat;

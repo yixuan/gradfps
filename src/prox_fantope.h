@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "quadprog.h"
+#include "inceig.h"
 
 // min  -lambda'x + 0.5 * ||x||^2
 // s.t. 0 <= xi <= 1
@@ -45,6 +46,38 @@ inline void quadprog_sol(const double* lambda, int p, int d, double* sol)
          Amat.data(), bvec.data(), &p, &q,
          &meq, iact.data(), &nact, iter,
          work.data(), &ierr);
+}
+
+// min  -tr(AX) + 0.5 * ||X||_F^2
+// s.t. X in Fantope
+inline void prox_fantope_impl(MapConstMat A, int d, int inc, int max_try, MapMat res)
+{
+    VectorXd theta(inc * max_try);
+    IncrementalEig inceig;
+    inceig.init(A, inc * max_try, inc);
+
+    for(int i = 0; i < max_try; i++)
+    {
+        if(i == max_try)
+            Rcpp::Rcout << "=== max_try: " << i << " ===" << std::endl;
+        inceig.compute_next();
+        const VectorXd& evals = inceig.eigenvalues();
+        quadprog_sol(evals.data(), inceig.num_computed(), d, theta.data());
+        if(std::abs(theta[inceig.num_computed() - 1]) < 1e-6)
+            break;
+    }
+
+    int pos = d;
+    const int end = inceig.num_computed();
+    for(; pos < end; pos++)
+    {
+        if(std::abs(theta[pos]) < 1e-6)
+            break;
+    }
+
+    res.noalias() = inceig.eigenvectors().leftCols(pos) *
+        theta.head(pos).asDiagonal() *
+        inceig.eigenvectors().leftCols(pos).transpose();
 }
 
 
