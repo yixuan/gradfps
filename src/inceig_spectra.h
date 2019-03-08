@@ -1,3 +1,6 @@
+#ifndef GRADFPS_INCEIG_SPECTRA_H
+#define GRADFPS_INCEIG_SPECTRA_H
+
 #include "common.h"
 #include <Spectra/SymEigsSolver.h>
 #include <Spectra/MatOp/DenseSymMatProd.h>
@@ -75,3 +78,6 @@ public:
     const VectorXd& eigenvalues() const { return m_evals; }
     const MatrixXd& eigenvectors() const { return m_evecs; }
 };
+
+
+#endif // GRADFPS_INCEIG_SPECTRA_H

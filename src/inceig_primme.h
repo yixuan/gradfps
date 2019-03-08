@@ -1,3 +1,6 @@
+#ifndef GRADFPS_INCEIG_PRIMME_H
+#define GRADFPS_INCEIG_PRIMME_H
+
 #include "common.h"
 #include <primme.h>
 
@@ -108,3 +111,6 @@ void mat_vec_prod(
     }
     *err = 0;
 }
+
+
+#endif // GRADFPS_INCEIG_PRIMME_H
