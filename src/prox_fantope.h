@@ -50,7 +50,8 @@ inline void quadprog_sol(const double* lambda, int p, int d, double* sol)
 
 // min  -tr(AX) + 0.5 * ||X||_F^2
 // s.t. X in Fantope
-inline void prox_fantope_impl(MapConstMat A, int d, int inc, int max_try, MapMat res)
+inline void prox_fantope_impl(MapConstMat A, int d, int inc, int max_try, MapMat res,
+                              int verbose = 0)
 {
     VectorXd theta(inc * max_try);
     IncrementalEig inceig;
@@ -58,8 +59,11 @@ inline void prox_fantope_impl(MapConstMat A, int d, int inc, int max_try, MapMat
 
     for(int i = 0; i < max_try; i++)
     {
-        if(i == max_try)
-            Rcpp::Rcout << "=== max_try: " << i << " ===" << std::endl;
+        if(verbose > 1)
+            Rcpp::Rcout << "[prox_fantope_impl] iter = " << i << std::endl;
+        if(verbose > 0 && i == max_try - 1)
+            Rcpp::Rcout << "[prox_fantope_impl] max_try = " << max_try << " reached!" << std::endl;
+
         inceig.compute_next();
         const VectorXd& evals = inceig.eigenvalues();
         quadprog_sol(evals.data(), inceig.num_computed(), d, theta.data());

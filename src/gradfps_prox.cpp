@@ -76,7 +76,7 @@ List gradfps_prox(MapMat S, MapMat x0, int d, double lambda,
 List gradfps_prox_benchmark(MapMat S, MapMat x0, MapMat Pi, int d, double lambda,
                   double lr = 0.001, int maxiter = 500,
                   double eps_abs = 1e-3, double eps_rel = 1e-3,
-                  bool verbose = true)
+                  int verbose = 0)
 {
     // Dimension of the covariance matrix
     const int n = S.rows();
@@ -94,7 +94,7 @@ List gradfps_prox_benchmark(MapMat S, MapMat x0, MapMat Pi, int d, double lambda
 
     for(int i = 0; i < maxiter; i++)
     {
-        if(i % 50 == 0)
+        if(verbose > 1 || (verbose > 0 && i % 50 == 0))
             Rcpp::Rcout << "iter = " << i << std::endl;
 
         t1 = get_wall_time();
@@ -106,7 +106,7 @@ List gradfps_prox_benchmark(MapMat S, MapMat x0, MapMat Pi, int d, double lambda
         z2.noalias() += lr * S;
         MapConstMat z2m(z2.data(), z2.rows(), z2.cols());
         MapMat newz1m(newz1.data(), newz1.rows(), newz1.cols());
-        prox_fantope_impl(z2m, d, 5 * d, 10, newz1m);
+        prox_fantope_impl(z2m, d, 5 * d, 10, newz1m, verbose);
         newz1.noalias() -= zdiff;
 
         // l1 <- soft_threshold(z1, lr * lambda)
