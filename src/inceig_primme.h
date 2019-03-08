@@ -4,7 +4,7 @@
 #include "common.h"
 #include <primme.h>
 
-void mat_vec_prod(
+inline void mat_vec_prod(
     void* x, PRIMME_INT* ldx, void* y, PRIMME_INT* ldy,
     int* blockSize, primme_params* primme, int* err
 );
@@ -92,7 +92,7 @@ public:
     const MatrixXd& eigenvectors() const { return m_evecs; }
 };
 
-void mat_vec_prod(
+inline void mat_vec_prod(
     void* x, PRIMME_INT* ldx, void* y, PRIMME_INT* ldy,
     int* blockSize, primme_params* primme, int* err
 )
