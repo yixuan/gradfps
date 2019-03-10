@@ -50,6 +50,15 @@ inline double quadprog_sol(const double* lambda, int p, int d, double* sol)
     return crval;
 }
 
+/* // [[Rcpp::export]]
+Rcpp::NumericVector quadprog_sol_r(Rcpp::NumericVector lambda, int d)
+{
+    int p = lambda.length();
+    Rcpp::NumericVector sol(p);
+    quadprog_sol(lambda.begin(), p, d, sol.begin());
+    return sol;
+} */
+
 // min  -tr(AX) + 0.5 * ||X||_F^2
 // s.t. X in Fantope
 inline int prox_fantope_impl(MapConstMat A, int d, int inc, int max_try, MapMat res,
