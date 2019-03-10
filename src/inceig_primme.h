@@ -61,7 +61,7 @@ public:
     }
 
     // X - Gk * Lk * Gk'
-    inline void perform_op(const double* x_in, double* y_out)
+    inline void perform_op(const double* x_in, double* y_out) const
     {
         MapConstVec x(x_in, m_n);
         MapVec y(y_out, m_n);
