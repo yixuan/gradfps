@@ -71,7 +71,7 @@ inline int prox_fantope_impl(MapConstMat A, int d, int inc, int max_try, MapMat 
         if(verbose > 0 && i == max_try - 1)
             Rcpp::Rcout << "[prox_fantope_impl] max_try = " << max_try << " reached!" << std::endl;
 
-        inceig.compute_next();
+        inceig.compute_next(verbose);
         const VectorXd& evals = inceig.eigenvalues();
         double newf = quadprog_sol(evals.data(), inceig.num_computed(), d, theta.data());
 

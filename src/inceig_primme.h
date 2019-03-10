@@ -78,12 +78,16 @@ public:
         y.noalias() = mat * x - m_evecs.leftCols(m_num_computed) * Gkx;
     }
 
-    inline void compute_next()
+    inline void compute_next(int verbose = 0)
     {
         if(m_num_computed + m_inc_evals > m_max_evals)
             throw std::logic_error("maximum number of eigenvalues computed");
 
         int ret = dprimme(&m_evals[m_num_computed], &m_evecs(0, m_num_computed), m_resid.data(), &m_primme);
+
+        if(verbose > 1)
+            Rcpp::Rcout << "[inceig] nops = " << m_primme.stats.numMatvecs << std::endl;
+
         m_num_computed += m_inc_evals;
     }
 
