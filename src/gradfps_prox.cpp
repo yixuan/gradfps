@@ -54,7 +54,8 @@ List gradfps_prox(MapMat S, MapMat x0, int d, double lambda,
         z2.noalias() += lr * S;
         MapConstMat z2m(z2.data(), z2.rows(), z2.cols());
         MapMat newz1m(newz1.data(), newz1.rows(), newz1.cols());
-        prox_fantope_impl(z2m, d, 5 * d, 10, newz1m);
+        double dsum;
+        prox_fantope_impl(z2m, d, 5 * d, 10, newz1m, dsum);
         newz1.noalias() -= zdiff;
 
         // l1 <- soft_threshold(z1, lr * lambda)
@@ -92,9 +93,15 @@ List gradfps_prox_benchmark(MapMat S, MapMat x0, MapMat Pi, int d, double lambda
     std::vector<double> times;
     double t1, t2;
     int fandim = 2 * d;
+    double dsum = d;
+    bool lr_const = false;
+    double step = lr;
 
     for(int i = 0; i < maxiter; i++)
     {
+        if(!lr_const)
+            step = lr / std::sqrt(i + 1.0);
+
         if(verbose > 1 || (verbose > 0 && i % 50 == 0))
             Rcpp::Rcout << "iter = " << i << std::endl;
 
@@ -104,23 +111,30 @@ List gradfps_prox_benchmark(MapMat S, MapMat x0, MapMat Pi, int d, double lambda
         zdiff.noalias() = 0.5 * (z2 - z1);
 
         // z1 <- -zdiff + prox_fantope(z2)
-        z2.noalias() += lr * S;
+        z2.noalias() += step * S;
         MapConstMat z2m(z2.data(), z2.rows(), z2.cols());
         MapMat newz1m(newz1.data(), newz1.rows(), newz1.cols());
-        fandim = prox_fantope_impl(z2m, d, fandim, 10, newz1m,
+        double newdsum;
+        fandim = prox_fantope_impl(z2m, d, fandim, 10, newz1m, newdsum,
                                    0.01 / std::sqrt(i + 1.0), verbose);
+
+        if(newdsum > dsum)
+        {
+            lr_const = true;
+            step = lr;
+        }
 
         if(verbose > 1)
             Rcpp::Rcout << "fandim = " << fandim << std::endl;
 
         fandim = std::max(5 * d, int(1.5 * fandim));
-        fandim = std::min(fandim, 20 * d);
+        fandim = std::min(fandim, 50 * d);
         newz1.noalias() -= zdiff;
 
         // l1 <- soft_threshold(z1, lr * lambda)
         // z2 <- zdiff + l1
         z2.swap(zdiff);
-        add_soft_threshold(z1, lr * lambda, z2);
+        add_soft_threshold(z1, step * lambda, z2);
 
         z1.swap(newz1);
 
