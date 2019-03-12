@@ -9,7 +9,7 @@
 // s.t. 0 <= xi <= 1
 //      x[1] + ... + x[p] = d
 
-inline double quadprog_sol(const double* lambda, int p, int d, double* sol)
+inline double quadprog_sol_impl(const double* lambda, int p, int d, double* sol)
 {
     MatrixXd Dmat = MatrixXd::Identity(p, p);
     VectorXd dvec(p);
@@ -55,13 +55,13 @@ Rcpp::NumericVector quadprog_sol_r(Rcpp::NumericVector lambda, int d)
 {
     int p = lambda.length();
     Rcpp::NumericVector sol(p);
-    quadprog_sol(lambda.begin(), p, d, sol.begin());
+    quadprog_sol_impl(lambda.begin(), p, d, sol.begin());
     return sol;
 } */
 
 // min  -tr(AX) + 0.5 * ||X||_F^2
 // s.t. X in Fantope
-inline int prox_fantope_impl(MapConstMat A, int d, int inc, int max_try, MapMat res,
+inline int prox_fantope_impl(MapConstMat A, int d, int inc, int max_try, MapMat res, double& dsum,
                              double eps = 1e-3, int verbose = 0)
 {
     VectorXd theta(inc * max_try);
@@ -82,7 +82,7 @@ inline int prox_fantope_impl(MapConstMat A, int d, int inc, int max_try, MapMat 
 
         inceig.compute_next(verbose);
         const VectorXd& evals = inceig.eigenvalues();
-        double newf = quadprog_sol(evals.data(), inceig.num_computed(), d, theta.data());
+        double newf = quadprog_sol_impl(evals.data(), inceig.num_computed(), d, theta.data());
 
         if(verbose > 1)
             Rcpp::Rcout << "[prox_fantope_impl] f = " << f << std::endl;
@@ -97,19 +97,38 @@ inline int prox_fantope_impl(MapConstMat A, int d, int inc, int max_try, MapMat 
     const int end = inceig.num_computed();
     for(; pos < end; pos++)
     {
-        if(std::abs(theta[pos]) <= eps)
+        if(std::abs(theta[pos]) <= 1e-6)
             break;
     }
 
     if(verbose > 1)
+    {
+        Rcpp::Rcout << "[prox_fantope_impl] evals = " << inceig.eigenvalues().head(inceig.num_computed()).transpose() << std::endl;
         Rcpp::Rcout << "[prox_fantope_impl] theta = " << theta.head(pos).transpose() << std::endl;
+    }
 
     res.noalias() = inceig.eigenvectors().leftCols(pos) *
         theta.head(pos).asDiagonal() *
         inceig.eigenvectors().leftCols(pos).transpose();
+    dsum = theta.head(d).sum();
 
     return pos;
 }
+
+/* // [[Rcpp::export]]
+Rcpp::NumericMatrix prox_fantope(MapMat v, double alpha, MapMat S, int d, int inc, int max_try)
+{
+    MatrixXd mat = v + alpha * S;
+    MapConstMat matm(mat.data(), mat.rows(), mat.cols());
+
+    Rcpp::NumericMatrix res(v.rows(), v.cols());
+    MapMat resm(res.begin(), res.nrow(), res.ncol());
+    double dsum;
+
+    prox_fantope_impl(matm, d, inc, max_try, resm, dsum);
+
+    return res;
+} */
 
 
 #endif  // GRADFPS_PROX_FANTOPE_H
