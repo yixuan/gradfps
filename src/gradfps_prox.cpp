@@ -40,7 +40,6 @@ List gradfps_prox(MapMat S, MapMat x0, int d, double lambda,
         Rcpp::stop("S must be square");
 
     MatrixXd z1 = x0, z2 = x0, zdiff(p, p), newz1(p, p);
-    SpMat l1(p, p);
 
     for(int i = 0; i < maxiter; i++)
     {
@@ -86,10 +85,10 @@ List gradfps_prox_benchmark(MapMat S, MapMat x0, MapMat Pi, int d, double lambda
         Rcpp::stop("S must be square");
 
     MatrixXd z1 = x0, z2 = x0, zdiff(p, p), newz1(p, p);
-    SpMat l1(p, p);
 
     // Metrics in each iteration
     std::vector<double> errs;
+    std::vector<double> errs2;
     std::vector<double> times;
     double t1, t2;
     int fandim = 2 * d;
@@ -137,15 +136,25 @@ List gradfps_prox_benchmark(MapMat S, MapMat x0, MapMat Pi, int d, double lambda
         add_soft_threshold(z1, step * lambda, z2);
 
         z1.swap(newz1);
+        // Reuse the memory of zdiff
+        MatrixXd& x = zdiff;
+        x.noalias() = 0.5 * (z1 + z2);
+
+        Spectra::DenseSymMatProd<double> op(x);
+        Spectra::SymEigsSolver< double, Spectra::LARGEST_ALGE, Spectra::DenseSymMatProd<double> > eigs(&op, d, 3 * d);
+        eigs.init();
+        eigs.compute();
+        MatrixXd evecs = eigs.eigenvectors();
 
         t2 = get_wall_time();
         times.push_back(t2 - t1);
-        errs.push_back((0.5 * (z1 + z2) - Pi).norm());
+        errs.push_back((x - Pi).norm());
+        errs2.push_back((evecs * evecs.transpose() - Pi).norm());
     }
 
     return List::create(
-        Rcpp::Named("projection") = 0.5 * (z1 + z2),
-        Rcpp::Named("errors") = errs,
+        Rcpp::Named("projection") = zdiff,
+        Rcpp::Named("errors") = errs2,
         Rcpp::Named("times") = times,
         Rcpp::Named("z1") = z1,
         Rcpp::Named("z2") = z2
