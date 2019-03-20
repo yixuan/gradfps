@@ -2,6 +2,7 @@
 #include "active.h"
 
 using Rcpp::NumericVector;
+using Rcpp::IntegerVector;
 
 
 // Comparator for std::sort(), in descending order
@@ -33,4 +34,26 @@ NumericVector lambda_range(MapMat S, int d, int act_size_min, int act_size_max)
         pattern[act_size_max - 1].m_max_off_diag,
         pattern[act_size_min - 1].m_max_off_diag
     );
+}
+
+// Get the active set given lambda
+// [[Rcpp::export]]
+IntegerVector active_set(MapMat S, int d, double lambda)
+{
+    // Dimension of the covariance matrix
+    const int n = S.rows();
+    const int p = S.cols();
+    if(n != p)
+        Rcpp::stop("S must be square");
+
+    VectorXd lambdas(1);
+    lambdas[0] = lambda;
+
+    // Analyze covariance pattern
+    ActiveSet act_set(S);
+    act_set.analyze_pattern();
+    act_set.find_active(d, lambdas);
+    IntegerVector act_set_ind = act_set.flattened_active_set_to_r();
+
+    return act_set_ind + 1;
 }
