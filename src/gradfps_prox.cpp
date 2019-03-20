@@ -31,7 +31,7 @@ inline void add_soft_threshold(const MatrixXd& x, double penalty, MatrixXd& res)
 List gradfps_prox(MapMat S, MapMat x0, int d, double lambda,
                   double lr = 0.001, int maxiter = 500,
                   double eps_abs = 1e-3, double eps_rel = 1e-3,
-                  bool verbose = true)
+                  int verbose = 0)
 {
     // Dimension of the covariance matrix
     const int n = S.rows();
@@ -40,33 +40,81 @@ List gradfps_prox(MapMat S, MapMat x0, int d, double lambda,
         Rcpp::stop("S must be square");
 
     MatrixXd z1 = x0, z2 = x0, zdiff(p, p), newz1(p, p);
+    MatrixXd evecs(p, d), newevecs(p, d);
 
-    for(int i = 0; i < maxiter; i++)
+    // Metrics in each iteration
+    std::vector<double> resid;
+
+    int fandim = 2 * d;
+    double dsum = d;
+    bool lr_const = false;
+    double step = lr;
+
+    int i = 0;
+    for(i = 0; i < maxiter; i++)
     {
-        if(i % 50 == 0)
+        if(!lr_const)
+            step = lr / std::sqrt(i + 1.0);
+
+        if(verbose > 1 || (verbose > 0 && i % 50 == 0))
             Rcpp::Rcout << "iter = " << i << std::endl;
 
         // zdiff <- (z2 - z1) / 2
         zdiff.noalias() = 0.5 * (z2 - z1);
 
         // z1 <- -zdiff + prox_fantope(z2)
-        z2.noalias() += lr * S;
+        z2.noalias() += step * S;
         MapConstMat z2m(z2.data(), z2.rows(), z2.cols());
         MapMat newz1m(newz1.data(), newz1.rows(), newz1.cols());
-        double dsum;
-        prox_fantope_impl(z2m, d, 5 * d, 10, newz1m, dsum);
+        double newdsum;
+        fandim = prox_fantope_impl(z2m, d, fandim, 10, newz1m, newdsum,
+                                   0.01 / std::sqrt(i + 1.0), verbose);
+
+        if(newdsum > dsum)
+        {
+            lr_const = true;
+            step = lr;
+        }
+
+        if(verbose > 1)
+            Rcpp::Rcout << "fandim = " << fandim << std::endl;
+
+        fandim = std::max(5 * d, int(1.5 * fandim));
+        fandim = std::min(fandim, 50 * d);
         newz1.noalias() -= zdiff;
 
         // l1 <- soft_threshold(z1, lr * lambda)
         // z2 <- zdiff + l1
         z2.swap(zdiff);
-        add_soft_threshold(z1, lr * lambda, z2);
+        add_soft_threshold(z1, step * lambda, z2);
 
         z1.swap(newz1);
+        // Reuse the memory of zdiff
+        MatrixXd& x = zdiff;
+        x.noalias() = 0.5 * (z1 + z2);
+
+        Spectra::DenseSymMatProd<double> op(x);
+        Spectra::SymEigsSolver< double, Spectra::LARGEST_ALGE, Spectra::DenseSymMatProd<double> > eigs(&op, d, 3 * d);
+        eigs.init();
+        eigs.compute();
+        newevecs.noalias() = eigs.eigenvectors();
+
+        if(i > 0)
+        {
+            double diff = (evecs.cwiseAbs() - newevecs.cwiseAbs()).norm();
+            resid.push_back(diff);
+            if(diff < eps_abs || diff < eps_rel * d)
+                break;
+        }
+
+        evecs.swap(newevecs);
     }
 
     return List::create(
-        Rcpp::Named("projection") = 0.5 * (z1 + z2),
+        Rcpp::Named("projection") = zdiff,
+        Rcpp::Named("evecs") = evecs,
+        Rcpp::Named("resid") = resid,
+        Rcpp::Named("niter") = i + 1,
         Rcpp::Named("z1") = z1,
         Rcpp::Named("z2") = z2
     );
@@ -87,9 +135,10 @@ List gradfps_prox_benchmark(MapMat S, MapMat x0, MapMat Pi, int d, double lambda
     MatrixXd z1 = x0, z2 = x0, zdiff(p, p), newz1(p, p);
 
     // Metrics in each iteration
-    std::vector<double> errs;
-    std::vector<double> errs2;
+    std::vector<double> errs_proj;  // directly use X_hat
+    std::vector<double> errs_est;   // top d eigenvectors of X_hat
     std::vector<double> times;
+
     double t1, t2;
     int fandim = 2 * d;
     double dsum = d;
@@ -148,13 +197,14 @@ List gradfps_prox_benchmark(MapMat S, MapMat x0, MapMat Pi, int d, double lambda
 
         t2 = get_wall_time();
         times.push_back(t2 - t1);
-        errs.push_back((x - Pi).norm());
-        errs2.push_back((evecs * evecs.transpose() - Pi).norm());
+        errs_proj.push_back((x - Pi).norm());
+        errs_est.push_back((evecs * evecs.transpose() - Pi).norm());
     }
 
     return List::create(
         Rcpp::Named("projection") = zdiff,
-        Rcpp::Named("errors") = errs2,
+        Rcpp::Named("errors") = errs_est,
+        Rcpp::Named("errors_proj") = errs_proj,
         Rcpp::Named("times") = times,
         Rcpp::Named("z1") = z1,
         Rcpp::Named("z2") = z2
