@@ -59,7 +59,7 @@ public:
         y.noalias() = mat * x - m_evecs.leftCols(m_num_computed) * Gkx;
     }
 
-    inline void compute_next(int verbose = 0)
+    inline int compute_next()
     {
         if(m_num_computed + m_inc_evals > m_max_evals)
             throw std::logic_error("maximum number of eigenvalues computed");
@@ -69,12 +69,11 @@ public:
         eigs.init();
         eigs.compute(1000, 1e-6);
 
-        if(verbose > 1)
-            Rcpp::Rcout << "[inceig] nops = " << eigs.num_operations() << std::endl;
-
         m_evals.segment(m_num_computed, m_inc_evals).noalias() = eigs.eigenvalues();
         m_evecs.block(0, m_num_computed, m_n, m_inc_evals).noalias() = eigs.eigenvectors();
         m_num_computed += m_inc_evals;
+
+        return eigs.num_operations();
     }
 
     const int num_computed() const { return m_num_computed; }

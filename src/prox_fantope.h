@@ -4,6 +4,7 @@
 #include "common.h"
 #include "quadprog.h"
 #include "inceig_spectra.h"
+#include "walltime.h"
 
 // min  -lambda'x + 0.5 * ||x||^2
 // s.t. 0 <= xi <= 1
@@ -71,21 +72,25 @@ inline int prox_fantope_impl(MapConstMat A, int d, int inc, int max_try, MapMat 
     double f = 0.0;
 
     if(verbose > 1)
-        Rcpp::Rcout << "[prox_fantope_impl] inc = " << inc << ", max_try = " << max_try << std::endl;
+        Rcpp::Rcout << "  [prox_fantope_impl] inc = " << inc << ", max_try = " << max_try << std::endl;
 
     for(int i = 0; i < max_try; i++)
     {
         if(verbose > 1)
-            Rcpp::Rcout << "[prox_fantope_impl] iter = " << i << std::endl;
+            Rcpp::Rcout << "  [prox_fantope_impl] iter = " << i << std::endl;
         if(verbose > 0 && i == max_try - 1)
-            Rcpp::Rcout << "[prox_fantope_impl] max_try = " << max_try << " reached!" << std::endl;
+            Rcpp::Rcout << "  [prox_fantope_impl] max_try = " << max_try << " reached!" << std::endl;
 
-        inceig.compute_next(verbose);
+        double t1 = get_wall_time();
+        int nops = inceig.compute_next();
         const VectorXd& evals = inceig.eigenvalues();
+        double t2 = get_wall_time();
+
         double newf = quadprog_sol_impl(evals.data(), inceig.num_computed(), d, theta.data());
 
         if(verbose > 1)
-            Rcpp::Rcout << "[prox_fantope_impl] f = " << f << std::endl;
+            Rcpp::Rcout << "  [prox_fantope_impl] f = " << f << ", nops = " << nops
+                        << ", time_eig = " << t2 - t1 << std::endl << std::endl;
 
         if(std::abs(newf - f) <= eps * std::abs(f) || std::abs(theta[inceig.num_computed() - 1]) <= eps)
             break;
@@ -103,8 +108,24 @@ inline int prox_fantope_impl(MapConstMat A, int d, int inc, int max_try, MapMat 
 
     if(verbose > 1)
     {
-        Rcpp::Rcout << "[prox_fantope_impl] evals = " << inceig.eigenvalues().head(inceig.num_computed()).transpose() << std::endl;
-        Rcpp::Rcout << "[prox_fantope_impl] theta = " << theta.head(pos).transpose() << std::endl;
+        const int nevals = inceig.num_computed();
+        if(nevals <= 5)
+        {
+            Rcpp::Rcout << "  [prox_fantope_impl] evals = " << inceig.eigenvalues().head(nevals).transpose() << std::endl;
+        } else {
+            const int tail = std::min(5, nevals - 5);
+            Rcpp::Rcout << "  [prox_fantope_impl] evals = " << inceig.eigenvalues().head(5).transpose() << " ..." << std::endl;
+            Rcpp::Rcout << "                              " << inceig.eigenvalues().segment(nevals - tail, tail).transpose() << std::endl;
+        }
+
+        if(pos <= 5)
+        {
+            Rcpp::Rcout << "  [prox_fantope_impl] theta = " << theta.head(pos).transpose() << std::endl;
+        } else {
+            const int tail = std::min(5, pos - 5);
+            Rcpp::Rcout << "  [prox_fantope_impl] theta = " << theta.head(5).transpose() << " ..." << std::endl;
+            Rcpp::Rcout << "                              " << theta.segment(pos - tail, tail).transpose() << std::endl;
+        }
     }
 
     res.noalias() = inceig.eigenvectors().leftCols(pos) *

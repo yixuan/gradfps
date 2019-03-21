@@ -151,7 +151,7 @@ List gradfps_prox_benchmark(MapMat S, MapMat x0, MapMat Pi, int d, double lambda
             step = lr / std::sqrt(i + 1.0);
 
         if(verbose > 1 || (verbose > 0 && i % 50 == 0))
-            Rcpp::Rcout << "iter = " << i << std::endl;
+            Rcpp::Rcout << "\niter = " << i << ", alpha = " << step << std::endl;
 
         t1 = get_wall_time();
 
@@ -173,7 +173,7 @@ List gradfps_prox_benchmark(MapMat S, MapMat x0, MapMat Pi, int d, double lambda
         }
 
         if(verbose > 1)
-            Rcpp::Rcout << "fandim = " << fandim << std::endl;
+            Rcpp::Rcout << "fantope_dim = " << fandim << std::endl;
 
         fandim = std::max(5 * d, int(1.5 * fandim));
         fandim = std::min(fandim, 50 * d);
