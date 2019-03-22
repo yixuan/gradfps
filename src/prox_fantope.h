@@ -65,34 +65,48 @@ Rcpp::NumericVector quadprog_sol_r(Rcpp::NumericVector lambda, int d)
 inline int prox_fantope_impl(MapConstMat A, int d, int inc, int max_try, MapMat res, double& dsum,
                              double eps = 1e-3, int verbose = 0)
 {
-    VectorXd theta(inc * max_try);
+    VectorXd theta(inc * max_try + d + 1);
     IncrementalEig inceig;
-    inceig.init(A, inc * max_try, inc);
 
-    double f = 0.0;
+    double t1 = get_wall_time();
+    inceig.init(A, inc * max_try, d + 1);
+    double t2 = get_wall_time();
+
+    const VectorXd& evals = inceig.eigenvalues();
+    double f = quadprog_sol_impl(evals.data(), inceig.num_computed(), d, theta.data());
+    double theta_last = theta[inceig.num_computed() - 1];
 
     if(verbose > 1)
+    {
+        Rcpp::Rcout << "  [prox_fantope_impl] time_init = " << t2 - t1 << std::endl;
         Rcpp::Rcout << "  [prox_fantope_impl] inc = " << inc << ", max_try = " << max_try << std::endl;
+    }
 
     for(int i = 0; i < max_try; i++)
     {
+        // If theta has reached zero eigenvalues
+        if(std::abs(theta_last) <= eps)
+            break;
+
         if(verbose > 1)
             Rcpp::Rcout << "  [prox_fantope_impl] iter = " << i << std::endl;
         if(verbose > 0 && i == max_try - 1)
             Rcpp::Rcout << "  [prox_fantope_impl] max_try = " << max_try << " reached!" << std::endl;
 
         double t1 = get_wall_time();
-        int nops = inceig.compute_next();
+        int nops = inceig.compute_next(inc);
         const VectorXd& evals = inceig.eigenvalues();
         double t2 = get_wall_time();
 
         double newf = quadprog_sol_impl(evals.data(), inceig.num_computed(), d, theta.data());
+        theta_last = theta[inceig.num_computed() - 1];
 
         if(verbose > 1)
             Rcpp::Rcout << "  [prox_fantope_impl] f = " << f << ", nops = " << nops
                         << ", time_eig = " << t2 - t1 << std::endl << std::endl;
 
-        if(std::abs(newf - f) <= eps * std::abs(f) || std::abs(theta[inceig.num_computed() - 1]) <= eps)
+        // If f does not significantly decrease
+        if(std::abs(newf - f) <= eps * std::abs(f))
             break;
 
         f = newf;
