@@ -81,6 +81,7 @@ List gradfps_prox(MapMat S, MapMat x0, int d, double lambda,
 
         fandim = std::max(5 * d, int(1.5 * fandim));
         fandim = std::min(fandim, 50 * d);
+        fandim = std::min(fandim, int(p / 10));
         newz1.noalias() -= zdiff;
 
         // l1 <- soft_threshold(z1, lr * lambda)
@@ -177,6 +178,7 @@ List gradfps_prox_benchmark(MapMat S, MapMat x0, MapMat Pi, int d, double lambda
 
         fandim = std::max(5 * d, int(1.5 * fandim));
         fandim = std::min(fandim, 50 * d);
+        fandim = std::min(fandim, int(p / 10));
         newz1.noalias() -= zdiff;
 
         // l1 <- soft_threshold(z1, lr * lambda)
