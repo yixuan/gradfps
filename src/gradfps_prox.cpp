@@ -92,7 +92,9 @@ List gradfps_prox(MapMat S, MapMat x0, int d, double lambda,
         z1.swap(newz1);
         // Reuse the memory of zdiff
         MatrixXd& x = zdiff;
-        x.noalias() = 0.5 * (z1 + z2);
+        // x.noalias() = 0.5 * (z1 + z2);
+        x.setZero();
+        add_soft_threshold(z1, step * lambda, x);
 
         Spectra::DenseSymMatProd<double> op(x);
         Spectra::SymEigsSolver< double, Spectra::LARGEST_ALGE, Spectra::DenseSymMatProd<double> > eigs(&op, d, 3 * d);
@@ -189,7 +191,9 @@ List gradfps_prox_benchmark(MapMat S, MapMat x0, MapMat Pi, int d, double lambda
         z1.swap(newz1);
         // Reuse the memory of zdiff
         MatrixXd& x = zdiff;
-        x.noalias() = 0.5 * (z1 + z2);
+        // x.noalias() = 0.5 * (z1 + z2);
+        x.setZero();
+        add_soft_threshold(z1, step * lambda, x);
 
         Spectra::DenseSymMatProd<double> op(x);
         Spectra::SymEigsSolver< double, Spectra::LARGEST_ALGE, Spectra::DenseSymMatProd<double> > eigs(&op, d, 3 * d);
