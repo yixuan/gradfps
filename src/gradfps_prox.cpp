@@ -53,8 +53,8 @@ List gradfps_prox(MapMat S, MapMat x0, int d, double lambda,
     int i = 0;
     for(i = 0; i < maxiter; i++)
     {
-        if(!lr_const)
-            step = lr / std::sqrt(i + 1.0);
+        // if(!lr_const)
+        //     step = lr / std::sqrt(i + 1.0);
 
         if(verbose > 1 || (verbose > 0 && i % 50 == 0))
             Rcpp::Rcout << "iter = " << i << std::endl;
@@ -70,11 +70,11 @@ List gradfps_prox(MapMat S, MapMat x0, int d, double lambda,
         fandim = prox_fantope_impl(z2m, d, fandim, 10, newz1m, newdsum,
                                    0.01 / std::sqrt(i + 1.0), verbose);
 
-        if(newdsum > dsum)
+        /* if(newdsum > dsum)
         {
             lr_const = true;
             step = lr;
-        }
+        } */
 
         if(verbose > 1)
             Rcpp::Rcout << "fandim = " << fandim << std::endl;
@@ -148,8 +148,8 @@ List gradfps_prox_benchmark(MapMat S, MapMat x0, MapMat Pi, int d, double lambda
 
     for(int i = 0; i < maxiter; i++)
     {
-        if(!lr_const)
-            step = lr / std::sqrt(i + 1.0);
+        // if(!lr_const)
+        //     step = lr / std::sqrt(i + 1.0);
 
         if(verbose > 1 || (verbose > 0 && i % 50 == 0))
             Rcpp::Rcout << "\niter = " << i << ", alpha = " << step << std::endl;
@@ -167,11 +167,11 @@ List gradfps_prox_benchmark(MapMat S, MapMat x0, MapMat Pi, int d, double lambda
         fandim = prox_fantope_impl(z2m, d, fandim, 10, newz1m, newdsum,
                                    0.01 / std::sqrt(i + 1.0), verbose);
 
-        if(newdsum > dsum)
+        /* if(newdsum > dsum)
         {
             lr_const = true;
             step = lr;
-        }
+        } */
 
         if(verbose > 1)
             Rcpp::Rcout << "fantope_dim = " << fandim << std::endl;
