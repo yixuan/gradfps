@@ -29,7 +29,7 @@ inline void add_soft_threshold(const MatrixXd& x, double penalty, MatrixXd& res)
 
 // [[Rcpp::export]]
 List gradfps_prox(MapMat S, MapMat x0, int d, double lambda,
-                  double lr = 0.001, int maxiter = 500,
+                  double lr = 0.001, int maxiter = 500, int maxinc = 100,
                   double eps_abs = 1e-3, double eps_rel = 1e-3,
                   int verbose = 0)
 {
@@ -80,7 +80,7 @@ List gradfps_prox(MapMat S, MapMat x0, int d, double lambda,
             Rcpp::Rcout << "fandim = " << fandim << std::endl;
 
         fandim = std::max(5 * d, int(1.5 * fandim));
-        fandim = std::min(fandim, 50 * d);
+        fandim = std::min(fandim, maxinc);
         fandim = std::min(fandim, int(p / 10));
         newz1.noalias() -= zdiff;
 
