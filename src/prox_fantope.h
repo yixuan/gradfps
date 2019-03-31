@@ -69,7 +69,7 @@ inline int prox_fantope_impl(MapConstMat A, int d, int inc, int max_try, MapMat 
     IncrementalEig inceig;
 
     double t1 = get_wall_time();
-    inceig.init(A, inc * max_try, d + 1);
+    inceig.init(A, inc * max_try + d + 1, d + 1);
     double t2 = get_wall_time();
 
     const VectorXd& evals = inceig.eigenvalues();
