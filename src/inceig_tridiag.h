@@ -2,10 +2,31 @@
 #define GRADFPS_INCEIG_TRIDIAG_H
 
 #include "common.h"
-#include <R_ext/Lapack.h>
 #include <Spectra/SymEigsSolver.h>
 #include <Spectra/MatOp/DenseSymMatProd.h>
 #include "walltime.h"
+
+#ifdef EIGEN_USE_BLAS
+#define F77_CALL(x)	x ## _
+#define F77_NAME(x) F77_CALL(x)
+#define La_extern extern
+extern "C" {
+
+La_extern void
+F77_NAME(dsytrd)(const char* uplo, const int* n,
+                 double* a, const int* lda,
+                 double* d, double* e, double* tau,
+                 double* work, const int* lwork, int* info);
+
+La_extern void
+F77_NAME(dgtsv)(const int* n, const int* nrhs,
+                double* dl, double* d, double* du,
+                double* b, const int* ldb, int* info);
+
+}
+#else
+#include <R_ext/Lapack.h>
+#endif
 
 class SymTridiag
 {
@@ -60,7 +81,7 @@ private:
 
     double        m_shift;
 
-    inline void apply_Qx(double* xptr)
+    inline void apply_Qx(double* xptr) const
     {
         MapVec x(xptr, m_n);
         for(int i = m_n - 3; i >= 0; i--)
@@ -174,6 +195,7 @@ public:
 
     inline void compute_eigenvectors()
     {
+        #pragma omp parallel for shared(m_num_computed, m_evecs)
         for(int i = 0; i < m_num_computed; i++)
         {
             apply_Qx(&m_evecs(0, i));

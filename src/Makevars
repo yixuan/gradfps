@@ -1,5 +1,6 @@
 PKG_CPPFLAGS = -I./include
-PKG_LIBS = -L./primme -lprimme $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
+PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
+PKG_LIBS = -L./primme -lprimme $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) $(SHLIB_OPENMP_CXXFLAGS)
 
 
 .PHONY: all clean
