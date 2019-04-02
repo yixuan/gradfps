@@ -3,7 +3,7 @@
 
 #include "common.h"
 #include "quadprog.h"
-#include "inceig_spectra.h"
+#include "inceig_tridiag.h"
 #include "walltime.h"
 
 // min  -lambda'x + 0.5 * ||x||^2
@@ -142,6 +142,7 @@ inline int prox_fantope_impl(MapConstMat A, int d, int inc, int max_try, MapMat 
         }
     }
 
+    inceig.compute_eigenvectors();
     res.noalias() = inceig.eigenvectors().leftCols(pos) *
         theta.head(pos).asDiagonal() *
         inceig.eigenvectors().leftCols(pos).transpose();

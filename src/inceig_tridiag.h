@@ -16,7 +16,7 @@ private:
 
 public:
     SymTridiag(int n, const double* diag, const double* subdiag) :
-    m_n(n), m_diag(diag), m_subdiag(subdiag)
+        m_n(n), m_diag(diag), m_subdiag(subdiag)
     {}
     inline int rows() const { return m_n; }
     inline int cols() const { return m_n; }
