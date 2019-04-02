@@ -83,13 +83,15 @@ private:
 
     inline void apply_Qx(double* xptr) const
     {
-        MapVec x(xptr, m_n);
-        for(int i = m_n - 3; i >= 0; i--)
+
+        int vlen = 1;
+        for(int i = m_n - 3; i >= 0; i--, vlen++)
         {
-            const int vlen = m_n - i - 2;
-            const double vx = m_Q.col(i).tail(vlen).dot(x.tail(vlen)) + xptr[i + 1];
+            MapVec xtail(xptr + i + 2, vlen);
+            MapConstVec v(&m_Q(i + 2, i), vlen);
+            const double vx = v.dot(xtail) + xptr[i + 1];
             const double scale = vx * m_tau[i];
-            x.tail(vlen).noalias() -= scale * m_Q.col(i).tail(vlen);
+            xtail.noalias() -= scale * v;
             xptr[i + 1] -= scale;
         }
     }
