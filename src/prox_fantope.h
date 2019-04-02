@@ -142,11 +142,20 @@ inline int prox_fantope_impl(MapConstMat A, int d, int inc, int max_try, MapMat 
         }
     }
 
+    t1 = get_wall_time();
     inceig.compute_eigenvectors();
+    t2 = get_wall_time();
     res.noalias() = inceig.eigenvectors().leftCols(pos) *
         theta.head(pos).asDiagonal() *
         inceig.eigenvectors().leftCols(pos).transpose();
     dsum = theta.head(d).sum();
+    double t3 = get_wall_time();
+
+    if(verbose > 1)
+    {
+        Rcpp::Rcout << "  [prox_fantope_impl] time_post1 = " << t2 - t1
+                    << ", time_post2 = " << t3 - t2 << std::endl;
+    }
 
     return pos;
 }
