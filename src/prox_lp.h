@@ -102,4 +102,112 @@ inline double solve_equation(double c, double p, double v, double x0)
 }
 
 
+
+// Proximal operator of delta/2 * ||x||_p^2
+inline void prox_lp_impl(RefConstVec vv, double p, double alpha, RefVec res, int maxit = 100)
+{
+    const int n = vv.size();
+    const double* v = vv.data();
+
+    res.noalias() = vv / (1.0 + alpha);
+    double* x = res.data();
+    const double cp = 2.0 / p - 1.0;
+    double c = 0.0;
+
+    VectorXd xp(n);
+    xp.array() = res.array().abs().pow(p);
+    double psum = xp.sum();
+    double newc = alpha * std::pow(psum, cp);
+
+    for(int it = 0; it < maxit; it++)
+    {
+        // Rcpp::Rcout << "iter = " << it << std::endl;
+
+        for(int i = 0; i < n; i++)
+        {
+            const double signv = (v[i] > 0.0) - (v[i] < 0.0);
+            x[i] = signv * solve_equation(newc, p, std::abs(v[i]), std::abs(x[i]));
+            const double newxip = std::pow(std::abs(x[i]), p);
+            psum += (newxip - xp[i]);
+            newc = alpha * std::pow(psum, cp);
+
+            xp[i] = newxip;
+        }
+
+        // Rcpp::Rcout << newc << std::endl;
+        // Rcpp::Rcout << "diff = " << std::abs(newc - c) << ", thresh = " << 1e-6 * std::max(1.0, c) << std::endl;
+
+        if(std::abs(newc - c) < 1e-6 * std::max(1.0, c))
+            break;
+
+        c = newc;
+    }
+}
+
+// Proximal operator of delta/2 * ||x||_p^2, applied to a symmetric matrix
+inline void prox_lp_mat_impl(RefConstMat vv, double p, double alpha, RefMat res, int maxit = 100)
+{
+    const int n = vv.rows();
+    const double* v = vv.data();
+
+    res.noalias() = vv / (1.0 + alpha);
+    double* x = res.data();
+    const double cp = 2.0 / p - 1.0;
+    double c = 0.0;
+
+    MatrixXd xpow(n, n);
+    double* xp = xpow.data();
+    for(int j = 0; j < n; j++)
+    {
+        for(int i = j; i < n; i++)
+        {
+            xpow.coeffRef(i, j) = std::pow(std::abs(res.coeff(i, j)), p);
+            xpow.coeffRef(j, i) = xpow.coeff(i, j);
+        }
+    }
+    double psum = xpow.sum();
+    double newc = alpha * std::pow(psum, cp);
+
+    for(int it = 0; it < maxit; it++)
+    {
+        // Rcpp::Rcout << "iter = " << it << std::endl;
+
+        for(int j = 0; j < n; j++)
+        {
+            // Diagonal elements
+            const int ind = j * (n + 1);
+            const double signv = (v[ind] > 0.0) - (v[ind] < 0.0);
+            x[ind] = signv * solve_equation(newc, p, std::abs(v[ind]), std::abs(x[ind]));
+            const double newxip = std::pow(std::abs(x[ind]), p);
+            psum += (newxip - xp[ind]);
+            newc = alpha * std::pow(psum, cp);
+            xp[ind] = newxip;
+
+            for(int i = j + 1; i < n; i++)
+            {
+                const int ind = j * n + i;
+                const int indt = i * n + j;
+                const double signv = (v[ind] > 0.0) - (v[ind] < 0.0);
+                x[ind] = signv * solve_equation(newc, p, std::abs(v[ind]), std::abs(x[ind]));
+                x[indt] = x[ind];
+                const double newxip = std::pow(std::abs(x[ind]), p);
+                psum += 2 * (newxip - xp[ind]);
+                newc = alpha * std::pow(psum, cp);
+
+                xp[ind] = newxip;
+                xp[indt] = newxip;
+            }
+        }
+
+        // Rcpp::Rcout << newc << std::endl;
+        // Rcpp::Rcout << "diff = " << std::abs(newc - c) << ", thresh = " << 1e-6 * std::max(1.0, c) << std::endl;
+
+        if(std::abs(newc - c) < 1e-6 * std::max(1.0, c))
+            break;
+
+        c = newc;
+    }
+}
+
+
 #endif  // GRADFPS_PROX_LP_H
