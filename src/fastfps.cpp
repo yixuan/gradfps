@@ -113,7 +113,7 @@ List fastfps_internal(
             }
 
             time1 = get_wall_time();
-            alpha = alpha0 / (l + 1.0) / (i + 1.0);
+            alpha = alpha0 / (l + 1.0) / std::sqrt(i + 1.0);
 
             // L1 thresholding, xsp <- soft_thresh(x)
             xsp.soft_thresh(x, curr_lambda * alpha);
@@ -157,8 +157,9 @@ List fastfps_internal(
             if(i >= 2)
             {
                 // x += (double(i - 1.0) / double(i + 2.0)) * (x - xold) + alpha * Smat;
-                const double w = (double(i - 1.0) / double(i + 2.0));
-                x.add(w, -w, alpha, xold, Smat);
+                // const double w = (double(i - 1.0) / double(i + 2.0));
+                // x.add(w, -w, alpha, xold, Smat);
+                x.add(alpha, Smat);
             } else {
                 // x += alpha * Smat;
                 x.add(alpha, Smat);
