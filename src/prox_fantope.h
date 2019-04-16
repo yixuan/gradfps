@@ -60,9 +60,11 @@ Rcpp::NumericVector quadprog_sol_r(Rcpp::NumericVector lambda, int d)
     return sol;
 } */
 
+
+
 // min  -tr(AX) + 0.5 * ||X||_F^2
 // s.t. X in Fantope
-inline int prox_fantope_impl(MapConstMat A, int d, int inc, int max_try, MapMat res, double& dsum,
+inline int prox_fantope_impl(RefConstMat A, int d, int inc, int max_try, RefMat res, double& dsum,
                              double eps = 1e-3, int verbose = 0)
 {
     VectorXd theta(inc * max_try + d + 1);

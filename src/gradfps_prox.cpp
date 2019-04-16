@@ -64,11 +64,10 @@ List gradfps_prox(MapMat S, MapMat x0, int d, double lambda,
 
         // z1 <- -zdiff + prox_fantope(z2)
         z2.noalias() += step * S;
-        MapConstMat z2m(z2.data(), z2.rows(), z2.cols());
-        MapMat newz1m(newz1.data(), newz1.rows(), newz1.cols());
         double newdsum;
-        fandim = prox_fantope_impl(z2m, d, fandim, 10, newz1m, newdsum,
+        fandim = prox_fantope_impl(z2, d, fandim, 10, newz1, newdsum,
                                    0.01 / std::sqrt(i + 1.0), verbose);
+        newz1.noalias() -= zdiff;
 
         /* if(newdsum > dsum)
         {
@@ -78,11 +77,9 @@ List gradfps_prox(MapMat S, MapMat x0, int d, double lambda,
 
         if(verbose > 1)
             Rcpp::Rcout << "fandim = " << fandim << std::endl;
-
         fandim = std::max(5 * d, int(1.5 * fandim));
         fandim = std::min(fandim, maxinc);
         fandim = std::min(fandim, int(p / 10));
-        newz1.noalias() -= zdiff;
 
         // l1 <- soft_threshold(z1, lr * lambda)
         // z2 <- zdiff + l1
@@ -163,11 +160,10 @@ List gradfps_prox_benchmark(MapMat S, MapMat x0, MapMat Pi, int d, double lambda
 
         // z1 <- -zdiff + prox_fantope(z2)
         z2.noalias() += step * S;
-        MapConstMat z2m(z2.data(), z2.rows(), z2.cols());
-        MapMat newz1m(newz1.data(), newz1.rows(), newz1.cols());
         double newdsum;
-        fandim = prox_fantope_impl(z2m, d, fandim, 10, newz1m, newdsum,
+        fandim = prox_fantope_impl(z2, d, fandim, 10, newz1, newdsum,
                                    0.01 / std::sqrt(i + 1.0), verbose);
+        newz1.noalias() -= zdiff;
 
         /* if(newdsum > dsum)
         {
@@ -177,11 +173,9 @@ List gradfps_prox_benchmark(MapMat S, MapMat x0, MapMat Pi, int d, double lambda
 
         if(verbose > 1)
             Rcpp::Rcout << "fantope_dim = " << fandim << std::endl;
-
         fandim = std::max(5 * d, int(1.5 * fandim));
         fandim = std::min(fandim, maxinc);
         fandim = std::min(fandim, int(p / 10));
-        newz1.noalias() -= zdiff;
 
         // l1 <- soft_threshold(z1, lr * lambda)
         // z2 <- zdiff + l1
