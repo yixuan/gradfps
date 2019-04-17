@@ -13,6 +13,6 @@ S3method(coef, fastfps)
 S3method(plot, fastfps)
 
 export(lambda_range, active_set, view_matrix, view_evec)
-export(gradfps_prox, gradfps_prox_benchmark)
+export(gradfps_prox, gradfps_prox_benchmark, gradfps_prox_omd)
 
 useDynLib(gradfps, .registration = TRUE)
