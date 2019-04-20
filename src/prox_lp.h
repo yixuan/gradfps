@@ -62,6 +62,10 @@ public:
 // Solve equation c * x^(p - 1) + x - v = 0, c > 0, 1 < p < 2, x > 0, v > 0
 inline double solve_equation(double c, double p, double v, double x0)
 {
+    // Edge case: if v is small, return 0
+    if(v < 1e-8)
+        return 0.0;
+
     // f(x) = c * x^(p - 1) + x is increasing in x, f(1) = c + 1
     // If v >= f(1), solve f(x) = v, 1 < x < v
     // If v < f(1), u = x^(p - 1), solve g(u) = u^r + c * u = v, r = 1 / (p - 1), 0 < u < 1
@@ -103,7 +107,7 @@ inline double solve_equation(double c, double p, double v, double x0)
 
 
 
-// Proximal operator of delta/2 * ||x||_p^2
+// Proximal operator of 0.5 * ||x||_p^2
 inline void prox_lp_impl(RefConstVec vv, double p, double alpha, RefVec res, int maxit = 100)
 {
     const int n = vv.size();
@@ -144,7 +148,7 @@ inline void prox_lp_impl(RefConstVec vv, double p, double alpha, RefVec res, int
     }
 }
 
-// Proximal operator of delta/2 * ||x||_p^2, applied to a symmetric matrix
+// Proximal operator of 0.5 * ||x||_p^2, applied to a symmetric matrix
 inline void prox_lp_mat_impl(RefConstMat vv, double p, double alpha, RefMat res, int maxit = 100)
 {
     const int n = vv.rows();
