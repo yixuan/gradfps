@@ -66,7 +66,7 @@ List gradfps_prox(MapMat S, MapMat x0, int d, double lambda,
         z2.noalias() += step * S;
         double newdsum;
         fandim = prox_fantope_impl(z2, d, fandim, 10, newz1, newdsum,
-                                   0.01 / std::sqrt(i + 1.0), verbose);
+                                   0.001 / std::sqrt(i + 1.0), verbose);
         newz1.noalias() -= zdiff;
 
         /* if(newdsum > dsum)
@@ -162,7 +162,7 @@ List gradfps_prox_benchmark(MapMat S, MapMat x0, MapMat Pi, int d, double lambda
         z2.noalias() += step * S;
         double newdsum;
         fandim = prox_fantope_impl(z2, d, fandim, 10, newz1, newdsum,
-                                   0.01 / std::sqrt(i + 1.0), verbose);
+                                   0.001 / std::sqrt(i + 1.0), verbose);
         newz1.noalias() -= zdiff;
 
         /* if(newdsum > dsum)
