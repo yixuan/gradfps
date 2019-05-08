@@ -28,6 +28,16 @@ inline void add_soft_threshold(const MatrixXd& x, double penalty, MatrixXd& res)
     }
 }
 
+// For two orthogonal matrices U and V, U'U = V'V = I_d,
+// ||UU' - VV'||^2 = 2 * d - 2 * ||U'V||^2
+inline double projection_diff(const MatrixXd& u, const MatrixXd& v)
+{
+    const int d = u.cols();
+    MatrixXd uv(d, d);
+    uv.noalias() = u.transpose() * v;
+    return 2.0 * d - 2.0 * uv.squaredNorm();
+}
+
 // -tr(S*X) + lambda * ||X||_1 + delta * ||X||_r^2 / 2
 // [[Rcpp::export]]
 List gradfps_prox_omd(MapMat S, MapMat x0, int d, double lambda, double delta,
@@ -102,7 +112,7 @@ List gradfps_prox_omd(MapMat S, MapMat x0, int d, double lambda, double delta,
 
         if(i > 0)
         {
-            double diff = (evecs.cwiseAbs() - newevecs.cwiseAbs()).norm();
+            const double diff = projection_diff(evecs, newevecs);
             resid.push_back(diff);
             if(diff < eps_abs || diff < eps_rel * d)
                 break;
