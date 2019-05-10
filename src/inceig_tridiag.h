@@ -139,13 +139,27 @@ public:
     // y = solve(s * I - T, x)
     inline void perform_op(const double* x_in, double* y_out)
     {
+        // First use the fast solver
+        // If not stable (divided-by-zero), use the LAPACK function
+        int info = tridiag_shift_solve(
+            m_n, m_diag.data(), m_subdiag.data(), x_in, m_shift, y_out,
+            m_lcache.data(), m_dcache.data()
+        );
+        if(info == 0)
+        {
+            // Negate y
+            std::transform(y_out, y_out + m_n, y_out, std::negate<double>());
+            return;
+        }
+
+        // Otherwise, use LAPACK
         std::copy(x_in, x_in + m_n, y_out);
 
         m_dcache.array() = m_shift - m_diag.array();
         m_lcache.noalias() = -m_subdiag;
         m_ucache.noalias() = -m_subdiag;
 
-        int nrhs = 1, info;
+        int nrhs = 1;
         F77_CALL(dgtsv)(&m_n, &nrhs, m_lcache.data(), m_dcache.data(), m_ucache.data(),
                  y_out, &m_n, &info);
         if(info != 0)
