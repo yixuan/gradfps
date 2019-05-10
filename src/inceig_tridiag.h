@@ -2,6 +2,7 @@
 #define GRADFPS_INCEIG_TRIDIAG_H
 
 #include "common.h"
+#include "tridiag.h"
 #include <Spectra/SymEigsSolver.h>
 #include <Spectra/MatOp/DenseSymMatProd.h>
 #include "walltime.h"
@@ -28,31 +29,6 @@ F77_NAME(dgtsv)(const int* n, const int* nrhs,
 #include <R_ext/Lapack.h>
 #endif
 
-class SymTridiag
-{
-private:
-    const int m_n;
-    const double* m_diag;
-    const double* m_subdiag;
-
-public:
-    SymTridiag(int n, const double* diag, const double* subdiag) :
-        m_n(n), m_diag(diag), m_subdiag(subdiag)
-    {}
-    inline int rows() const { return m_n; }
-    inline int cols() const { return m_n; }
-    inline void perform_op(const double* x_in, double* y_out) const
-    {
-        y_out[0] = m_diag[0] * x_in[0] + m_subdiag[0] * x_in[1];
-        y_out[m_n - 1] = m_subdiag[m_n - 2] * x_in[m_n - 2] + m_diag[m_n - 1] * x_in[m_n - 1];
-        for(int i = 1; i < m_n - 1; i++)
-        {
-            y_out[i] = m_subdiag[i - 1] * x_in[i - 1] +
-                m_diag[i] * x_in[i] +
-                m_subdiag[i] * x_in[i + 1];
-        }
-    }
-};
 
 class IncrementalEig
 {

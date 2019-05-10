@@ -6,7 +6,7 @@
 // y = A * x
 // Diagonal:    b[0], ..., b[n-1]
 // Subdiagonal: c[0], ..., c[n-2]
-void tridiag_prod(int n, const double* b, const double* c, const double* x, double* y)
+inline void tridiag_prod(int n, const double* b, const double* c, const double* x, double* y)
 {
     y[0] = b[0] * x[0] + c[0] * x[1];
     y[n - 1] = c[n - 2] * x[n - 2] + b[n - 1] * x[n - 1];
@@ -16,6 +16,25 @@ void tridiag_prod(int n, const double* b, const double* c, const double* x, doub
     }
 }
 
+class SymTridiag
+{
+private:
+    const int m_n;
+    const double* m_diag;
+    const double* m_subdiag;
+
+public:
+    SymTridiag(int n, const double* diag, const double* subdiag) :
+        m_n(n), m_diag(diag), m_subdiag(subdiag)
+    {}
+    inline int rows() const { return m_n; }
+    inline int cols() const { return m_n; }
+    inline void perform_op(const double* x_in, double* y_out) const
+    {
+        tridiag_prod(m_n, m_diag, m_subdiag, x_in, y_out);
+    }
+};
+
 // Solve (A - s * I) * x = d
 // Diagonal:    b[0], ..., b[n-1]
 // Subdiagonal: c[0], ..., c[n-2]
@@ -23,7 +42,7 @@ void tridiag_prod(int n, const double* b, const double* c, const double* x, doub
 // Working space - wdc[n-1], wdd[n]. If NULL, they will be created
 // Return >0 if there is a divided-by-zero issue
 // https://en.wikipedia.org/wiki/Tridiagonal_matrix_algorithm
-int tridiagonal_solve(
+inline int tridiag_shift_solve(
     int n, const double* b, const double* c, const double* d, double s, double* x,
     double* wdc, double* wdd
 )
