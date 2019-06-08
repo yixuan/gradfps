@@ -62,7 +62,7 @@ view_matrix = function(mat, legend_title = "Coefficient", bar_height = 10, font_
     colors = col_pal[lo_ind:hi_ind]
 
     ggplot(gdat, aes(x = x, y = y, fill = z)) +
-        geom_raster() +
+        geom_tile() +
         scale_x_continuous("", breaks = breaks, expand = c(0, 0)) +
         scale_y_reverse("", breaks = breaks, expand = c(0, 0)) +
         scale_fill_gradientn(legend_title, colors = colors) +
@@ -105,7 +105,7 @@ view_evec = function(
     colors = col_pal[lo_ind:hi_ind]
 
     ggplot(gdat, aes(x = x, y = y, fill = z)) +
-        geom_raster() +
+        geom_tile() +
         scale_x_continuous(xlab, expand = c(0, 0)) +
         scale_y_reverse(ylab, expand = c(0, 0)) +
         scale_fill_gradientn(legend_title, colors = colors) +
