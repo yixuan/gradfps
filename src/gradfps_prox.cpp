@@ -38,10 +38,11 @@ inline double projection_diff(const MatrixXd& u, const MatrixXd& v)
 }
 
 // [[Rcpp::export]]
-List gradfps_prox(MapMat S, MapMat x0, int d, double lambda,
-                  double lr = 0.001, int maxiter = 500, int maxinc = 100,
-                  double eps_abs = 1e-3, double eps_rel = 1e-3,
-                  int verbose = 0)
+List gradfps_prox_(MapMat S, MapMat x0, int d, double lambda,
+                   double lr = 0.001, int maxiter = 500,
+                   int maxinc = 100, int maxtry = 10,
+                   double eps_abs = 1e-3, double eps_rel = 1e-3,
+                   int verbose = 0)
 {
     // Dimension of the covariance matrix
     const int n = S.rows();
@@ -53,9 +54,9 @@ List gradfps_prox(MapMat S, MapMat x0, int d, double lambda,
     MatrixXd evecs(p, d), newevecs(p, d);
 
     // Metrics in each iteration
-    std::vector<double> resid;
-    std::vector<double> resid1;
-    std::vector<double> resid2;
+    std::vector<double> err_v;
+    std::vector<double> err_z1;
+    std::vector<double> err_z2;
 
     int fandim = 2 * d;
     double dsum = d;
@@ -71,7 +72,7 @@ List gradfps_prox(MapMat S, MapMat x0, int d, double lambda,
         // z1 <- -zdiff + prox_fantope(z2)
         newz2.noalias() = z2 + step * S;
         double newdsum;
-        fandim = prox_fantope_impl(newz2, d, fandim, 10, newz1, newdsum,
+        fandim = prox_fantope_impl(newz2, d, fandim, maxtry, newz1, newdsum,
                                    0.001 / std::sqrt(i + 1.0), verbose);
         newz2.noalias() = 0.5 * (z2 - z1);
         newz1.noalias() -= newz2;
@@ -86,8 +87,8 @@ List gradfps_prox(MapMat S, MapMat x0, int d, double lambda,
         // z2 <- zdiff + l1
         add_soft_threshold(z1, step * lambda, newz2);
 
-        resid1.push_back((newz1 - z1).norm());
-        resid2.push_back((newz2 - z2).norm());
+        err_z1.push_back((newz1 - z1).norm());
+        err_z2.push_back((newz2 - z2).norm());
 
         z1.swap(newz1);
         z2.swap(newz2);
@@ -104,10 +105,13 @@ List gradfps_prox(MapMat S, MapMat x0, int d, double lambda,
         if(i > 0)
         {
             const double diff = projection_diff(evecs, newevecs);
-            resid.push_back(diff);
+            err_v.push_back(diff);
 
             if(verbose > 0)
-                Rcpp::Rcout << "  [info] resid = " << diff << std::endl << std::endl;
+                Rcpp::Rcout << "  [info] err_v = " << diff
+                            << ", err_z1 = " << err_z1.back()
+                            << ", err_z2 = " << err_z2.back()
+                            << std::endl << std::endl;
 
             if(diff < eps_abs || diff < eps_rel * d)
                 break;
@@ -130,9 +134,9 @@ List gradfps_prox(MapMat S, MapMat x0, int d, double lambda,
     return List::create(
         Rcpp::Named("projection") = newz1,
         Rcpp::Named("evecs") = eigs.eigenvectors(),
-        Rcpp::Named("resid") = resid,
-        Rcpp::Named("resid1") = resid1,
-        Rcpp::Named("resid2") = resid2,
+        Rcpp::Named("err_v") = err_v,
+        Rcpp::Named("err_z1") = err_z1,
+        Rcpp::Named("err_z2") = err_z2,
         Rcpp::Named("niter") = i + 1,
         Rcpp::Named("z1") = z1,
         Rcpp::Named("z2") = z2
