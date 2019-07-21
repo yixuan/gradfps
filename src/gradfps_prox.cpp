@@ -40,7 +40,7 @@ inline double projection_diff(const MatrixXd& u, const MatrixXd& v)
 // [[Rcpp::export]]
 List gradfps_prox_(MapMat S, MapMat x0, int d, double lambda,
                    double lr = 0.001, int maxiter = 500,
-                   int maxinc = 100, int maxtry = 10,
+                   int fan_maxinc = 100, int fan_maxiter = 10,
                    double eps_abs = 1e-3, double eps_rel = 1e-3,
                    int verbose = 0)
 {
@@ -58,9 +58,7 @@ List gradfps_prox_(MapMat S, MapMat x0, int d, double lambda,
     std::vector<double> err_z1;
     std::vector<double> err_z2;
 
-    int fandim = 2 * d;
-    double dsum = d;
-    bool lr_const = false;
+    int fan_inc = 2 * d;
     double step = lr;
 
     int i = 0;
@@ -72,16 +70,16 @@ List gradfps_prox_(MapMat S, MapMat x0, int d, double lambda,
         // z1 <- -zdiff + prox_fantope(z2)
         newz2.noalias() = z2 + step * S;
         double newdsum;
-        fandim = prox_fantope_impl(newz2, d, fandim, maxtry, newz1, newdsum,
-                                   0.001 / std::sqrt(i + 1.0), verbose);
+        fan_inc = prox_fantope_impl(newz2, d, fan_inc, fan_maxiter, newz1, newdsum,
+                                    0.001 / std::sqrt(i + 1.0), verbose);
         newz2.noalias() = 0.5 * (z2 - z1);
         newz1.noalias() -= newz2;
 
         if(verbose > 1)
-            Rcpp::Rcout << "fandim = " << fandim << std::endl;
-        fandim = std::max(5 * d, int(1.5 * fandim));
-        fandim = std::min(fandim, maxinc);
-        fandim = std::min(fandim, int(p / 10));
+            Rcpp::Rcout << "fan_inc = " << fan_inc << std::endl;
+        fan_inc = std::max(5 * d, int(1.5 * fan_inc));
+        fan_inc = std::min(fan_inc, fan_maxinc);
+        fan_inc = std::min(fan_inc, int(p / 10));
 
         // l1 <- soft_threshold(z1, lr * lambda)
         // z2 <- zdiff + l1
@@ -144,10 +142,11 @@ List gradfps_prox_(MapMat S, MapMat x0, int d, double lambda,
 }
 
 // [[Rcpp::export]]
-List gradfps_prox_benchmark(MapMat S, MapMat x0, MapMat Pi, int d, double lambda,
-                  double lr = 0.001, int maxiter = 500, int maxinc = 100,
-                  double eps_abs = 1e-3, double eps_rel = 1e-3,
-                  int verbose = 0)
+List gradfps_prox_benchmark_(MapMat S, MapMat Pi, MapMat x0, int d, double lambda,
+                             double lr = 0.001, int maxiter = 500,
+                             int fan_maxinc = 100, int fan_maxiter = 10,
+                             double eps_abs = 1e-3, double eps_rel = 1e-3,
+                             int verbose = 0)
 {
     // Dimension of the covariance matrix
     const int n = S.rows();
@@ -158,14 +157,14 @@ List gradfps_prox_benchmark(MapMat S, MapMat x0, MapMat Pi, int d, double lambda
     MatrixXd z1 = x0, z2 = x0, zdiff(p, p), newz1(p, p);
 
     // Metrics in each iteration
-    std::vector<double> errs_proj;  // directly use X_hat
-    std::vector<double> errs_est;   // top d eigenvectors of X_hat
+    std::vector<double> err_x;  // directly use X_hat
+    std::vector<double> err_v;  // top d eigenvectors of X_hat
     std::vector<double> times;
 
     double t1, t2;
-    int fandim = 2 * d;
-    double dsum = d;
-    bool lr_const = false;
+    int fan_inc = 2 * d;
+    // double dsum = d;
+    // bool lr_const = false;
     double step = lr;
 
     for(int i = 0; i < maxiter; i++)
@@ -184,8 +183,8 @@ List gradfps_prox_benchmark(MapMat S, MapMat x0, MapMat Pi, int d, double lambda
         // z1 <- -zdiff + prox_fantope(z2)
         z2.noalias() += step * S;
         double newdsum;
-        fandim = prox_fantope_impl(z2, d, fandim, 10, newz1, newdsum,
-                                   0.001 / std::sqrt(i + 1.0), verbose);
+        fan_inc = prox_fantope_impl(z2, d, fan_inc, fan_maxiter, newz1, newdsum,
+                                    0.001 / std::sqrt(i + 1.0), verbose);
         newz1.noalias() -= zdiff;
 
         /* if(newdsum > dsum)
@@ -195,10 +194,10 @@ List gradfps_prox_benchmark(MapMat S, MapMat x0, MapMat Pi, int d, double lambda
         } */
 
         if(verbose > 1)
-            Rcpp::Rcout << "fantope_dim = " << fandim << std::endl;
-        fandim = std::max(5 * d, int(1.5 * fandim));
-        fandim = std::min(fandim, maxinc);
-        fandim = std::min(fandim, int(p / 10));
+            Rcpp::Rcout << "fan_inc = " << fan_inc << std::endl;
+        fan_inc = std::max(5 * d, int(1.5 * fan_inc));
+        fan_inc = std::min(fan_inc, fan_maxinc);
+        fan_inc = std::min(fan_inc, int(p / 10));
 
         // l1 <- soft_threshold(z1, lr * lambda)
         // z2 <- zdiff + l1
@@ -220,14 +219,14 @@ List gradfps_prox_benchmark(MapMat S, MapMat x0, MapMat Pi, int d, double lambda
 
         t2 = get_wall_time();
         times.push_back(t2 - t1);
-        errs_proj.push_back((x - Pi).norm());
-        errs_est.push_back((evecs * evecs.transpose() - Pi).norm());
+        err_x.push_back((x - Pi).norm());
+        err_v.push_back((evecs * evecs.transpose() - Pi).norm());
     }
 
     return List::create(
         Rcpp::Named("projection") = zdiff,
-        Rcpp::Named("errors") = errs_est,
-        Rcpp::Named("errors_proj") = errs_proj,
+        Rcpp::Named("err_x") = err_x,
+        Rcpp::Named("err_v") = err_v,
         Rcpp::Named("times") = times,
         Rcpp::Named("z1") = z1,
         Rcpp::Named("z2") = z2
