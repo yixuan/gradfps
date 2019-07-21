@@ -64,14 +64,14 @@ Rcpp::NumericVector quadprog_sol_r(Rcpp::NumericVector lambda, int d)
 
 // min  -tr(AX) + 0.5 * ||X||_F^2
 // s.t. X in Fantope
-inline int prox_fantope_impl(RefConstMat A, int d, int inc, int max_try, RefMat res, double& dsum,
+inline int prox_fantope_impl(RefConstMat A, int d, int inc, int maxiter, RefMat res, double& dsum,
                              double eps = 1e-3, int verbose = 0)
 {
-    VectorXd theta(inc * max_try + d + 1);
+    VectorXd theta(inc * maxiter + d + 1);
     IncrementalEig inceig;
 
     double t1 = get_wall_time();
-    inceig.init(A, inc * max_try + d + 1, d + 1);
+    inceig.init(A, inc * maxiter + d + 1, d + 1);
     double t2 = get_wall_time();
 
     const VectorXd& evals = inceig.eigenvalues();
@@ -81,10 +81,10 @@ inline int prox_fantope_impl(RefConstMat A, int d, int inc, int max_try, RefMat 
     if(verbose > 1)
     {
         Rcpp::Rcout << "  [prox_fantope_impl] time_init = " << t2 - t1 << std::endl;
-        Rcpp::Rcout << "  [prox_fantope_impl] inc = " << inc << ", max_try = " << max_try << std::endl;
+        Rcpp::Rcout << "  [prox_fantope_impl] inc = " << inc << ", maxiter = " << maxiter << std::endl;
     }
 
-    for(int i = 0; i < max_try; i++)
+    for(int i = 0; i < maxiter; i++)
     {
         // If theta has reached zero eigenvalues
         if(std::abs(theta_last) <= eps)
@@ -92,8 +92,8 @@ inline int prox_fantope_impl(RefConstMat A, int d, int inc, int max_try, RefMat 
 
         if(verbose > 1)
             Rcpp::Rcout << "  [prox_fantope_impl] iter = " << i << std::endl;
-        if(verbose > 0 && i == max_try - 1)
-            Rcpp::Rcout << "  [prox_fantope_impl] max_try = " << max_try << " reached!" << std::endl;
+        if(verbose > 0 && i == maxiter - 1)
+            Rcpp::Rcout << "  [prox_fantope_impl] maxiter = " << maxiter << " reached!" << std::endl;
 
         double t1 = get_wall_time();
         int nops = inceig.compute_next(inc);
@@ -163,7 +163,7 @@ inline int prox_fantope_impl(RefConstMat A, int d, int inc, int max_try, RefMat 
 }
 
 /* // [[Rcpp::export]]
-Rcpp::NumericMatrix prox_fantope(MapMat v, double alpha, MapMat S, int d, int inc, int max_try)
+Rcpp::NumericMatrix prox_fantope(MapMat v, double alpha, MapMat S, int d, int inc, int maxiter)
 {
     MatrixXd mat = v + alpha * S;
     MapConstMat matm(mat.data(), mat.rows(), mat.cols());
@@ -172,7 +172,7 @@ Rcpp::NumericMatrix prox_fantope(MapMat v, double alpha, MapMat S, int d, int in
     MapMat resm(res.begin(), res.nrow(), res.ncol());
     double dsum;
 
-    prox_fantope_impl(matm, d, inc, max_try, resm, dsum);
+    prox_fantope_impl(matm, d, inc, maxiter, resm, dsum);
 
     return res;
 } */
