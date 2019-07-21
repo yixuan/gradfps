@@ -108,7 +108,8 @@ inline double solve_equation(double c, double p, double v, double x0)
 
 
 // Proximal operator of 0.5 * ||x||_p^2
-inline void prox_lp_impl(RefConstVec vv, double p, double alpha, RefVec res, int maxit = 100)
+inline void prox_lp_impl(RefConstVec vv, double p, double alpha, RefVec res,
+                         double eps = 1e-6, int maxiter = 100, int verbose = 0)
 {
     const int n = vv.size();
     const double* v = vv.data();
@@ -123,9 +124,10 @@ inline void prox_lp_impl(RefConstVec vv, double p, double alpha, RefVec res, int
     double psum = xp.sum();
     double newc = alpha * std::pow(psum, cp);
 
-    for(int it = 0; it < maxit; it++)
+    for(int it = 0; it < maxiter; it++)
     {
-        // Rcpp::Rcout << "iter = " << it << std::endl;
+        if(verbose > 0)
+            Rcpp::Rcout << "iter = " << it;
 
         for(int i = 0; i < n; i++)
         {
@@ -138,10 +140,10 @@ inline void prox_lp_impl(RefConstVec vv, double p, double alpha, RefVec res, int
             xp[i] = newxip;
         }
 
-        // Rcpp::Rcout << newc << std::endl;
-        // Rcpp::Rcout << "diff = " << std::abs(newc - c) << ", thresh = " << 1e-6 * std::max(1.0, c) << std::endl;
+        if(verbose > 0)
+            Rcpp::Rcout << ", diff = " << std::abs(newc - c) << ", thresh = " << eps * std::max(1.0, c) << std::endl;
 
-        if(std::abs(newc - c) < 1e-6 * std::max(1.0, c))
+        if(std::abs(newc - c) < eps * std::max(1.0, c))
             break;
 
         c = newc;
@@ -149,7 +151,8 @@ inline void prox_lp_impl(RefConstVec vv, double p, double alpha, RefVec res, int
 }
 
 // Proximal operator of 0.5 * ||x||_p^2, applied to a symmetric matrix
-inline void prox_lp_mat_impl(RefConstMat vv, double p, double alpha, RefMat res, int maxit = 100)
+inline void prox_lp_mat_impl(RefConstMat vv, double p, double alpha, RefMat res,
+                             double eps = 1e-6, int maxiter = 100, int verbose = 0)
 {
     const int n = vv.rows();
     const double* v = vv.data();
@@ -172,9 +175,10 @@ inline void prox_lp_mat_impl(RefConstMat vv, double p, double alpha, RefMat res,
     double psum = xpow.sum();
     double newc = alpha * std::pow(psum, cp);
 
-    for(int it = 0; it < maxit; it++)
+    for(int it = 0; it < maxiter; it++)
     {
-        // Rcpp::Rcout << "iter = " << it << std::endl;
+        if(verbose > 0)
+            Rcpp::Rcout << "iter = " << it;
 
         for(int j = 0; j < n; j++)
         {
@@ -203,10 +207,10 @@ inline void prox_lp_mat_impl(RefConstMat vv, double p, double alpha, RefMat res,
             }
         }
 
-        // Rcpp::Rcout << newc << std::endl;
-        // Rcpp::Rcout << "diff = " << std::abs(newc - c) << ", thresh = " << 1e-6 * std::max(1.0, c) << std::endl;
+        if(verbose > 0)
+            Rcpp::Rcout << ", diff = " << std::abs(newc - c) << ", thresh = " << eps * std::max(1.0, c) << std::endl;
 
-        if(std::abs(newc - c) < 1e-6 * std::max(1.0, c))
+        if(std::abs(newc - c) < eps * std::max(1.0, c))
             break;
 
         c = newc;

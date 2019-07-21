@@ -91,7 +91,7 @@ List gradfps_prox_omd(MapMat S, MapMat x0, int d, double lambda, double delta,
 
         // z3 <- z3 - x + prox_lp(2 * x - z3, lr * delta)
         prox_in.noalias() = x + x - z3;
-        prox_lp_mat_impl(prox_in, r, step * delta, prox_out, 100);
+        prox_lp_mat_impl(prox_in, r, step * delta, prox_out, 1e-6, 100);
         z3.noalias() += (prox_out - x);
 
         // l1 <- soft_threshold(2 * x - z2, lr * lambda)
