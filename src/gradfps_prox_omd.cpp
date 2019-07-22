@@ -40,10 +40,11 @@ inline double projection_diff(const MatrixXd& u, const MatrixXd& v)
 
 // -tr(S*X) + lambda * ||X||_1 + delta * ||X||_r^2 / 2
 // [[Rcpp::export]]
-List gradfps_prox_omd(MapMat S, MapMat x0, int d, double lambda, double delta,
-                      double lr = 0.001, int maxiter = 500, int maxinc = 100,
-                      double eps_abs = 1e-3, double eps_rel = 1e-3,
-                      int verbose = 0)
+List gradfps_prox_omd_(MapMat S, MapMat x0, int d, double lambda, double delta,
+                       double lr = 0.001, int maxiter = 500,
+                       int fan_maxinc = 100, int fan_maxiter = 10,
+                       double eps_abs = 1e-3, double eps_rel = 1e-3,
+                       int verbose = 0)
 {
     // Dimension of the covariance matrix
     const int n = S.rows();
@@ -58,9 +59,9 @@ List gradfps_prox_omd(MapMat S, MapMat x0, int d, double lambda, double delta,
     MatrixXd evecs(p, d), newevecs(p, d);
 
     // Metrics in each iteration
-    std::vector<double> resid;
+    std::vector<double> err;
 
-    int fandim = 2 * d;
+    int fan_inc = 2 * d;
     const double radius = std::sqrt(double(d));
     double step = lr;
 
@@ -79,15 +80,15 @@ List gradfps_prox_omd(MapMat S, MapMat x0, int d, double lambda, double delta,
         // z1 <- z1 - x + prox_fantope(2 * x - z1)
         prox_in.noalias() = x + x - z1 + step * S;
         double newdsum;
-        fandim = prox_fantope_impl(prox_in, d, fandim, 10, prox_out, newdsum,
-                                   0.01 / std::sqrt(i + 1.0), verbose);
+        fan_inc = prox_fantope_impl(prox_in, d, fan_inc, fan_maxiter, prox_out, newdsum,
+                                    0.01 / std::sqrt(i + 1.0), verbose);
         z1.noalias() += (prox_out - x);
 
         if(verbose > 1)
-            Rcpp::Rcout << "fandim = " << fandim << std::endl;
-        fandim = std::max(5 * d, int(1.5 * fandim));
-        fandim = std::min(fandim, maxinc);
-        fandim = std::min(fandim, int(p / 10));
+            Rcpp::Rcout << "fan_inc = " << fan_inc << std::endl;
+        fan_inc = std::max(5 * d, int(1.5 * fan_inc));
+        fan_inc = std::min(fan_inc, fan_maxinc);
+        fan_inc = std::min(fan_inc, int(p / 10));
 
         // z3 <- z3 - x + prox_lp(2 * x - z3, lr * delta)
         prox_in.noalias() = x + x - z3;
@@ -113,7 +114,7 @@ List gradfps_prox_omd(MapMat S, MapMat x0, int d, double lambda, double delta,
         if(i > 0)
         {
             const double diff = projection_diff(evecs, newevecs);
-            resid.push_back(diff);
+            err.push_back(diff);
             if(diff < eps_abs || diff < eps_rel * d)
                 break;
         }
@@ -124,7 +125,7 @@ List gradfps_prox_omd(MapMat S, MapMat x0, int d, double lambda, double delta,
     return List::create(
         Rcpp::Named("projection") = prox_out,
         Rcpp::Named("evecs") = evecs,
-        Rcpp::Named("resid") = resid,
+        Rcpp::Named("err") = err,
         Rcpp::Named("niter") = i + 1,
         Rcpp::Named("z1") = z1,
         Rcpp::Named("z2") = z2
