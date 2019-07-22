@@ -2,8 +2,9 @@
 ##'
 ##' The GradFPS algorithm for sparse PCA using proximal-proximal gradient method.
 ##' It solves the optimization problem
-##' \deqn{\min\quad-tr(SX) + \lambda ||X||_{1,1}}{min  -tr(AX) + \lambda * ||X||_1,1}
-##' \deqn{s.t.\quad X\in \mathcal{F}^d}{s.t. X in F^d}
+##' \deqn{\min\quad-tr(SX) + \lambda ||X||_{1,1},}{min  -tr(AX) + \lambda * ||X||_{1,1},}
+##' \deqn{s.t.\quad X\in \mathcal{F}^d,}{s.t. X in F^d,}
+##' where \eqn{\mathcal{F}^d}{F^d} is the Fantope.
 ##'
 ##' @param S       The sample covariance matrix.
 ##' @param d       The number of sparse principal components to seek.
@@ -89,8 +90,10 @@ gradfps_prox_benchmark = function(
 ##'
 ##' The GradFPS algorithm for sparse PCA using online mirror descent method.
 ##' It solves the optimization problem
-##' \deqn{\min\quad-tr(SX) + \lambda ||X||_{1,1}}{min  -tr(AX) + \lambda * ||X||_1,1}
-##' \deqn{s.t.\quad X\in \mathcal{F}^d}{s.t. X in F^d}
+##' \deqn{\min\quad-tr(SX) + \lambda ||X||_{1,1} + \frac{\delta}{2}||X||_{r,r}^2,}{min  -tr(AX) + \lambda * ||X||_{1,1} + (\delta / 2) * ||X||_{r,r}^2,}
+##' \deqn{s.t.\quad X\in \mathcal{F}^d,}{s.t. X in F^d,}
+##' where \eqn{r = 1 + 1 / (\log(p) - 1)}{r = 1 + 1 / (log(p) - 1)}, and
+##' \eqn{\mathcal{F}^d}{F^d} is the Fantope.
 ##'
 ##' @param S       The sample covariance matrix.
 ##' @param d       The number of sparse principal components to seek.
