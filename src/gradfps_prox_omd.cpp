@@ -85,7 +85,7 @@ List gradfps_prox_omd_(MapMat S, MapMat x0, int d, double lambda, double delta,
         z1.noalias() += (prox_out - x);
 
         if(verbose > 1)
-            Rcpp::Rcout << "fan_inc = " << fan_inc << std::endl;
+            Rcpp::Rcout << "fan_dim = " << fan_inc << std::endl;
         fan_inc = std::max(5 * d, int(1.5 * fan_inc));
         fan_inc = std::min(fan_inc, fan_maxinc);
         fan_inc = std::min(fan_inc, int(p / 10));

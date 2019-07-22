@@ -76,7 +76,7 @@ List gradfps_prox_(MapMat S, MapMat x0, int d, double lambda,
         newz1.noalias() -= newz2;
 
         if(verbose > 1)
-            Rcpp::Rcout << "fan_inc = " << fan_inc << std::endl;
+            Rcpp::Rcout << "fan_dim = " << fan_inc << std::endl;
         fan_inc = std::max(5 * d, int(1.5 * fan_inc));
         fan_inc = std::min(fan_inc, fan_maxinc);
         fan_inc = std::min(fan_inc, int(p / 10));
@@ -194,7 +194,7 @@ List gradfps_prox_benchmark_(MapMat S, MapMat Pi, MapMat x0, int d, double lambd
         } */
 
         if(verbose > 1)
-            Rcpp::Rcout << "fan_inc = " << fan_inc << std::endl;
+            Rcpp::Rcout << "fan_dim = " << fan_inc << std::endl;
         fan_inc = std::max(5 * d, int(1.5 * fan_inc));
         fan_inc = std::min(fan_inc, fan_maxinc);
         fan_inc = std::min(fan_inc, int(p / 10));
