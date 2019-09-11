@@ -53,9 +53,15 @@ view_matrix = function(mat, legend_title = "Coefficient", bar_height = 10, font_
 
     # Map the color spectrum to [-r, r]
     ngrid = 1001
-    col_pal = colorRampPalette(c("#67001F", "#B2182B", "#D6604D", "#F4A582",
-                                 "#FDDBC7", "#FFFFFF", "#D1E5F0",
-                                 "#92C5DE", "#4393C3", "#2166AC", "#053061"))(ngrid)
+    # col_pal = colorRampPalette(c("#67001F", "#B2182B", "#D6604D", "#F4A582",
+    #                              "#FDDBC7", "#FFFFFF", "#D1E5F0",
+    #                              "#92C5DE", "#4393C3", "#2166AC", "#053061"))(ngrid)
+    col_pal = colorRampPalette(c("#67000d", "#a50f15", "#cb181d", "#ef3b2c",
+                                 "#fb6a4a", "#fc9272", "#fcbba1", "#fee0d2",
+                                 "#ffffff",
+                                 "#deebf7", "#c6dbef", "#9ecae1", "#6baed6",
+                                 "#4292c6", "#2171b5", "#08519c", "#08306b"))(ngrid)
+
     col_val = seq(-r, r, length.out = ngrid)
     lo_ind = findInterval(lo, col_val)
     hi_ind = findInterval(hi, col_val)
@@ -96,9 +102,15 @@ view_evec = function(
 
     # Map the color spectrum to [-r, r]
     ngrid = 1001
-    col_pal = colorRampPalette(c("#67001F", "#B2182B", "#D6604D", "#F4A582",
-                                 "#FDDBC7", "#FFFFFF", "#D1E5F0",
-                                 "#92C5DE", "#4393C3", "#2166AC", "#053061"))(ngrid)
+    # col_pal = colorRampPalette(c("#67001F", "#B2182B", "#D6604D", "#F4A582",
+    #                              "#FDDBC7", "#FFFFFF", "#D1E5F0",
+    #                              "#92C5DE", "#4393C3", "#2166AC", "#053061"))(ngrid)
+    col_pal = colorRampPalette(c("#67000d", "#a50f15", "#cb181d", "#ef3b2c",
+                                 "#fb6a4a", "#fc9272", "#fcbba1", "#fee0d2",
+                                 "#ffffff",
+                                 "#deebf7", "#c6dbef", "#9ecae1", "#6baed6",
+                                 "#4292c6", "#2171b5", "#08519c", "#08306b"))(ngrid)
+
     col_val = seq(-r, r, length.out = ngrid)
     lo_ind = findInterval(lo, col_val)
     hi_ind = findInterval(hi, col_val)
