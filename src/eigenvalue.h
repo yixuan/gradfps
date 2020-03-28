@@ -1,5 +1,5 @@
-#ifndef FASTFPS_EIGENVALUE_H
-#define FASTFPS_EIGENVALUE_H
+#ifndef GRADFPS_EIGENVALUE_H
+#define GRADFPS_EIGENVALUE_H
 
 #include "common.h"
 #include "sparsemat.h"
@@ -111,4 +111,4 @@ inline void eigs_sparse_both_ends_primme(
 }
 
 
-#endif // FASTFPS_EIGENVALUE_H
+#endif // GRADFPS_EIGENVALUE_H

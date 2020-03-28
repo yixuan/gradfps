@@ -1,5 +1,5 @@
-#ifndef FASTFPS_SYM_MAT_H
-#define FASTFPS_SYM_MAT_H
+#ifndef GRADFPS_SYM_MAT_H
+#define GRADFPS_SYM_MAT_H
 
 #include "common.h"
 
@@ -14,6 +14,7 @@ private:
     typedef Eigen::MatrixXd Matrix;
     typedef Eigen::Map<Vector> MapVec;
     typedef Eigen::Map<const Vector> MapConstVec;
+    typedef Eigen::Ref<const Matrix> RefConstMat;
 
     int     m_lead_dim;  // leading dimension
     Matrix  m_data;      // storage
@@ -26,6 +27,10 @@ public:
 
     SymMat(int max_n) :
         m_lead_dim(max_n), m_data(Matrix::Zero(max_n, max_n)), m_n(max_n)
+    {}
+
+    SymMat(RefConstMat mat) :
+        m_lead_dim(mat.rows()), m_data(mat.triangularView<Eigen::Lower>()), m_n(mat.rows())
     {}
 
     // For debugging
@@ -197,4 +202,4 @@ public:
 };
 
 
-#endif  // FASTFPS_SYM_MAT_H
+#endif  // GRADFPS_SYM_MAT_H

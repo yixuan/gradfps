@@ -1,10 +1,10 @@
-#ifndef FASTFPS_SPARSE_MAT_H
-#define FASTFPS_SPARSE_MAT_H
+#ifndef GRADFPS_SPARSE_MAT_H
+#define GRADFPS_SPARSE_MAT_H
 
 #include "common.h"
 #include "symmat.h"
 
-// Define a structure that mimics the dgCMatrix class
+// Define a structure that mimics the dgCMatrix class in R
 // Assume that the matrix is lower-triangular
 class dgCMatrix
 {
@@ -116,4 +116,4 @@ public:
 };
 
 
-#endif  // FASTFPS_SPARSE_MAT_H
+#endif  // GRADFPS_SPARSE_MAT_H

@@ -1,5 +1,5 @@
-#ifndef FASTFPS_ACTIVE_H
-#define FASTFPS_ACTIVE_H
+#ifndef GRADFPS_ACTIVE_H
+#define GRADFPS_ACTIVE_H
 
 #include "common.h"
 #include "symmat.h"
@@ -192,4 +192,4 @@ public:
 };
 
 
-#endif // FASTFPS_ACTIVE_H
+#endif // GRADFPS_ACTIVE_H
