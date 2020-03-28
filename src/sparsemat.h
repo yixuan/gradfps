@@ -109,9 +109,48 @@ public:
     // Eigen solver operator - computing matrix-vector multiplication
     inline void perform_op(const double* x_in, double* y_out) const
     {
-        MapConstVec x(x_in,  m_n);
-        MapVec      y(y_out, m_n);
-        y.noalias() = to_spmat().selfadjointView<Eigen::Lower>() * x;
+        // MapConstVec x(x_in,  m_n);
+        // MapVec      y(y_out, m_n);
+        // y.noalias() = to_spmat().selfadjointView<Eigen::Lower>() * x;
+
+        // Zero out y vector
+        std::fill(y_out, y_out + m_n, 0.0);
+
+        const int nnz = m_x.size();
+        const double* elem_ptr = &m_x[0];
+        const int* row_id_ptr = &m_i[0];
+        const int* p_ptr = &m_p[0];
+        // For each nonzero value, get the (row, col, value) triplet
+        for(int col_id = 0; col_id < m_n; col_id++)
+        {
+            const int col_nnz = p_ptr[col_id + 1] - p_ptr[col_id];
+            const double* col_end = elem_ptr + col_nnz;
+            const double x_in_col = x_in[col_id];
+
+            // We know that row_id >= col_id if the matrix is constructed
+            // from soft_thresh(), so we can first test the presence of
+            // diagonal elements, and then process off-diagonal elements
+
+            // Diagonal elements
+            if(*row_id_ptr == col_id)
+            {
+                // Add value to the y vector
+                y_out[col_id] += (*elem_ptr) * x_in_col;
+                elem_ptr++;
+                row_id_ptr++;
+            }
+
+            // Off-diagonal elements
+            double y_out_col = 0.0;
+            for( ; elem_ptr < col_end; elem_ptr++, row_id_ptr++)
+            {
+                // Add value to the y vector
+                y_out[*row_id_ptr] += (*elem_ptr) * x_in_col;
+                // For off-diagonal elements, do a symmetric update
+                y_out_col += (*elem_ptr) * x_in[*row_id_ptr];
+            }
+            y_out[col_id] += y_out_col;
+        }
     }
 };
 
