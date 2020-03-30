@@ -56,7 +56,7 @@ inline int shrink_min(const double* x, int n, double penalty, double& shrink)
     return n - 1;
 }
 
-// Proximal operator of f(x) = max(0, eigmax(x) - 1)
+// Proximal operator of alpha * f(x), f(x) = max(0, eigmax(x) - 1)
 // [[Rcpp::export]]
 NumericMatrix prox_eigmax(
     NumericMatrix x, double penalty, int init_neval = 10, int inc = 10, int max_try = 10
@@ -103,7 +103,7 @@ NumericMatrix prox_eigmax(
     return res;
 }
 
-// Proximal operator of f(x) = max(0, -eigmin(x))
+// Proximal operator of alpha * f(x), f(x) = max(0, -eigmin(x))
 // [[Rcpp::export]]
 NumericMatrix prox_eigmin(
     NumericMatrix x, double penalty, int init_neval = 10, int inc = 10, int max_try = 10
@@ -150,6 +150,90 @@ NumericMatrix prox_eigmin(
     return res;
 }
 
+// Proximal operator of alpha1 * f(x) + alpha2 * f2(x)
+// f1(x) = max(0, eigmax(x) - 1), f2(x) = max(0, -eigmin(x))
+// [[Rcpp::export]]
+NumericMatrix prox_eigminmax(
+    NumericMatrix x, double penalty_sm, double penalty_lg,
+    int init_neval_sm = 10, int inc_sm = 10,
+    int init_neval_lg = 10, int inc_lg = 10, int max_try = 10
+)
+{
+    const int n = x.nrow();
+    Eigen::Map<const MatrixXd> mat(x.begin(), n, n);
+
+    // Compute initial eigenvalues
+    IncrementalEig inceig;
+    inceig.init(mat, init_neval_lg + inc_lg * max_try, init_neval_lg,
+                     init_neval_sm + inc_sm * max_try, init_neval_sm);
+
+    // Test stopping criterion for largest eigenvalues
+    const VectorXd& evals_lg = inceig.largest_eigenvalues();
+    int neval_lg = inceig.num_computed_largest();
+    double shrink_lg;
+    int loc_lg = shrink_max(evals_lg.data(), neval_lg, penalty_lg, shrink_lg);
+
+    // Extend the search range if the shrinkage does not happen in computed eigenvalues
+    if(loc_lg >= neval_lg - 1)
+    {
+        for(int i = 0; i < max_try; i++)
+        {
+            inceig.compute_next_largest(inc_lg);
+            const VectorXd& evals_lg = inceig.largest_eigenvalues();
+            neval_lg = inceig.num_computed_largest();
+            loc_lg = shrink_max(evals_lg.data(), neval_lg, penalty_lg, shrink_lg);
+            if(loc_lg <= neval_lg - 2)
+                break;
+        }
+    }
+
+    // Test stopping criterion for smallest eigenvalues
+    const VectorXd& evals_sm = inceig.smallest_eigenvalues();
+    int neval_sm = inceig.num_computed_smallest();
+    double shrink_sm;
+    int loc_sm = shrink_min(evals_sm.data(), neval_sm, penalty_sm, shrink_sm);
+
+    // Extend the search range if the shrinkage does not happen in computed eigenvalues
+    if(loc_sm >= neval_sm - 1)
+    {
+        for(int i = 0; i < max_try; i++)
+        {
+            inceig.compute_next_smallest(inc_sm);
+            const VectorXd& evals_sm = inceig.smallest_eigenvalues();
+            neval_sm = inceig.num_computed_smallest();
+            loc_sm = shrink_min(evals_sm.data(), neval_sm, penalty_sm, shrink_sm);
+            if(loc_sm <= neval_sm - 2)
+                break;
+        }
+    }
+
+    // Compute the final result
+    NumericMatrix res = Rcpp::clone(x);
+    Eigen::Map<MatrixXd> res_(res.begin(), n, n);
+    inceig.compute_eigenvectors(loc_lg + 1, loc_sm + 1);
+    // Only shrink largest eigenvalues if loc_lg >= 0
+    if(loc_lg >= 0)
+    {
+        // Difference of eigenvalues
+        VectorXd evals_delta = shrink_lg - inceig.largest_eigenvalues().head(loc_lg + 1).array();
+        // Eigenvectors
+        const MatrixXd& evecs = inceig.largest_eigenvectors();
+        res_.noalias() += evecs.leftCols(loc_lg + 1) * evals_delta.asDiagonal() * evecs.leftCols(loc_lg + 1).transpose();
+
+    }
+    // Only shrink smallest eigenvalues if loc_sm >= 0
+    if(loc_sm >= 0)
+    {
+        // Difference of eigenvalues
+        VectorXd evals_delta = shrink_sm - inceig.smallest_eigenvalues().head(loc_sm + 1).array();
+        // Eigenvectors
+        const MatrixXd& evecs = inceig.smallest_eigenvectors();
+        res_.noalias() += evecs.leftCols(loc_sm + 1) * evals_delta.asDiagonal() * evecs.leftCols(loc_sm + 1).transpose();
+    }
+
+    return res;
+}
+
 
 /*
  set.seed(123)
@@ -165,7 +249,6 @@ NumericMatrix prox_eigmin(
  head(evals1 <- eigen(res1, symmetric = TRUE, only.values = TRUE)$values, 20)
  res2 = gradfps:::prox_eigmin(x, penalty)
  tail(evals2 <- eigen(res2, symmetric = TRUE, only.values = TRUE)$values, 20)
-
  sum(evals1 - evals)
  sum(evals2 - evals)
 
@@ -173,4 +256,14 @@ NumericMatrix prox_eigmin(
  thresh2 = gradfps:::thresh_eigmin(x, penalty)
  max(abs(res1 - (x + thresh1)))
  max(abs(res2 - (x + thresh2)))
+
+ penalty_sm = 1.234
+ penalty_lg = 1.567
+ res1 = gradfps:::prox_eigmin(x, penalty_sm)
+ res1 = gradfps:::prox_eigmax(res1, penalty_lg)
+ res2 = gradfps:::prox_eigmax(x, penalty_lg)
+ res2 = gradfps:::prox_eigmin(res2, penalty_sm)
+ res3 = gradfps:::prox_eigminmax(x, penalty_sm, penalty_lg)
+ max(abs(res1 - res3))
+ max(abs(res2 - res3))
  */
