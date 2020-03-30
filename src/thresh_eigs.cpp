@@ -3,7 +3,7 @@
 using Rcpp::NumericMatrix;
 
 // [[Rcpp::export]]
-NumericMatrix eigmax_thresh(NumericMatrix x, double penalty)
+NumericMatrix thresh_eigmax(NumericMatrix x, double penalty)
 {
     const int MaxEvals = 10;
 
@@ -41,7 +41,7 @@ NumericMatrix eigmax_thresh(NumericMatrix x, double penalty)
 }
 
 // [[Rcpp::export]]
-NumericMatrix eigmin_thresh(NumericMatrix x, double penalty)
+NumericMatrix thresh_eigmin(NumericMatrix x, double penalty)
 {
     const int MaxEvals = 10;
 
