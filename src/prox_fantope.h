@@ -71,12 +71,12 @@ inline int prox_fantope_impl(RefConstMat A, int d, int inc, int maxiter, RefMat 
     IncrementalEig inceig;
 
     double t1 = get_wall_time();
-    inceig.init(A, inc * maxiter + d + 1, d + 1);
+    inceig.init(A, inc * maxiter + d + 1, d + 1, 0, 0);
     double t2 = get_wall_time();
 
-    const VectorXd& evals = inceig.eigenvalues();
-    double f = quadprog_sol_impl(evals.data(), inceig.num_computed(), d, theta.data());
-    double theta_last = theta[inceig.num_computed() - 1];
+    const VectorXd& evals = inceig.largest_eigenvalues();
+    double f = quadprog_sol_impl(evals.data(), inceig.num_computed_largest(), d, theta.data());
+    double theta_last = theta[inceig.num_computed_largest() - 1];
 
     if(verbose > 1)
     {
@@ -96,12 +96,12 @@ inline int prox_fantope_impl(RefConstMat A, int d, int inc, int maxiter, RefMat 
             Rcpp::Rcout << "  [prox_fantope_impl] maxiter = " << maxiter << " reached!" << std::endl;
 
         double t1 = get_wall_time();
-        int nops = inceig.compute_next(inc);
-        const VectorXd& evals = inceig.eigenvalues();
+        int nops = inceig.compute_next_largest(inc);
+        const VectorXd& evals = inceig.largest_eigenvalues();
         double t2 = get_wall_time();
 
-        double newf = quadprog_sol_impl(evals.data(), inceig.num_computed(), d, theta.data());
-        theta_last = theta[inceig.num_computed() - 1];
+        double newf = quadprog_sol_impl(evals.data(), inceig.num_computed_largest(), d, theta.data());
+        theta_last = theta[inceig.num_computed_largest() - 1];
 
         if(verbose > 1)
             Rcpp::Rcout << "  [prox_fantope_impl] f = " << f << ", nops = " << nops
@@ -115,7 +115,7 @@ inline int prox_fantope_impl(RefConstMat A, int d, int inc, int maxiter, RefMat 
     }
 
     int pos = d;
-    const int end = inceig.num_computed();
+    const int end = inceig.num_computed_largest();
     for(; pos < end; pos++)
     {
         if(std::abs(theta[pos]) <= 1e-6)
@@ -124,14 +124,14 @@ inline int prox_fantope_impl(RefConstMat A, int d, int inc, int maxiter, RefMat 
 
     if(verbose > 1)
     {
-        const int nevals = inceig.num_computed();
+        const int nevals = inceig.num_computed_largest();
         if(nevals <= 5)
         {
-            Rcpp::Rcout << "  [prox_fantope_impl] evals = " << inceig.eigenvalues().head(nevals).transpose() << std::endl;
+            Rcpp::Rcout << "  [prox_fantope_impl] evals = " << inceig.largest_eigenvalues().head(nevals).transpose() << std::endl;
         } else {
             const int tail = std::min(5, nevals - 5);
-            Rcpp::Rcout << "  [prox_fantope_impl] evals = " << inceig.eigenvalues().head(5).transpose() << " ..." << std::endl;
-            Rcpp::Rcout << "                              " << inceig.eigenvalues().segment(nevals - tail, tail).transpose() << std::endl;
+            Rcpp::Rcout << "  [prox_fantope_impl] evals = " << inceig.largest_eigenvalues().head(5).transpose() << " ..." << std::endl;
+            Rcpp::Rcout << "                              " << inceig.largest_eigenvalues().segment(nevals - tail, tail).transpose() << std::endl;
         }
 
         if(pos <= 5)
@@ -145,11 +145,11 @@ inline int prox_fantope_impl(RefConstMat A, int d, int inc, int maxiter, RefMat 
     }
 
     t1 = get_wall_time();
-    inceig.compute_eigenvectors();
+    inceig.compute_eigenvectors(pos, 0);
     t2 = get_wall_time();
-    res.noalias() = inceig.eigenvectors().leftCols(pos) *
+    res.noalias() = inceig.largest_eigenvectors().leftCols(pos) *
         theta.head(pos).asDiagonal() *
-        inceig.eigenvectors().leftCols(pos).transpose();
+        inceig.largest_eigenvectors().leftCols(pos).transpose();
     dsum = theta.head(d).sum();
     double t3 = get_wall_time();
 
