@@ -111,8 +111,9 @@ NumericMatrix prox_eigminmax(
     Eigen::Map<const MatrixXd> A_(A.begin(), n, n);
     NumericMatrix res = Rcpp::clone(A);
     Eigen::Map<MatrixXd> res_(res.begin(), n, n);
-    prox_eigs_impl(A_, alpha_lg, alpha_sm, res_,
-                   init_neval_lg, inc_lg, init_neval_sm, inc_sm, max_try);
+    prox_eigs_delta_impl(A_, alpha_lg, alpha_sm, res_,
+                         init_neval_lg, inc_lg, init_neval_sm, inc_sm, max_try);
+    res_.noalias() += A_;
     return res;
 }
 

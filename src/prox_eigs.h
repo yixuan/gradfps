@@ -62,7 +62,7 @@ inline int shrink_min(const double* x, int n, double penalty, double& shrink)
 // f1(x) = max(0, eigmax(x) - 1), f2(x) = max(0, -eigmin(x))
 //
 // min  alpha1 * f1(X) + alpha2 * f2(X) + 0.5 * ||X - A||_F^2
-inline void prox_eigs_impl(
+inline void prox_eigs_delta_impl(
     RefConstMat A, double penalty_lg, double penalty_sm, RefMat res,
     int init_neval_lg = 10, int inc_lg = 10,
     int init_neval_sm = 10, int inc_sm = 10, int max_try = 10
@@ -114,7 +114,7 @@ inline void prox_eigs_impl(
     }
 
     // Compute the final result
-    res.noalias() = A;
+    res.setZero();
     inceig.compute_eigenvectors(loc_lg + 1, loc_sm + 1);
     // Only shrink largest eigenvalues if loc_lg >= 0
     if(loc_lg >= 0)
