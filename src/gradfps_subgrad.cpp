@@ -138,7 +138,11 @@ List gradfps_subgrad_(
         {
             Rcpp::Rcout << "=";
             if(i % 50 == 49)
+            {
                 Rcpp::Rcout << " " << i + 1 << " iterations"<< std::endl;
+                Rcpp::Rcout << "\neigenvalues = " << evals.transpose() << std::endl << std::endl;
+            }
+
         }
 
         time1 = get_wall_time();
