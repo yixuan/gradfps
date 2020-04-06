@@ -142,7 +142,7 @@ List gradfps_subgrad_(
         }
 
         time1 = get_wall_time();
-        alpha = alpha0 / std::sqrt(i + 1.0);
+        alpha = alpha0 / std::sqrt(i / 10 + 1.0);
 
         // L1 thresholding, xsp <- soft_thresh(x)
         xsp.soft_thresh(x, lambda * alpha);
