@@ -13,7 +13,7 @@ importClassesFrom(Matrix, dgCMatrix)
 # S3method(plot, fastfps)
 
 export(lambda_range, active_set, view_matrix, view_evec)
-export(gradfps_subgrad, gradfps_prox, gradfps_prox_benchmark, gradfps_prox_omd)
+export(gradfps_subgrad, gradfps_prox, gradfps_prox2, gradfps_prox_benchmark, gradfps_prox_omd)
 export(prox_fantope)
 
 useDynLib(gradfps, .registration = TRUE)
