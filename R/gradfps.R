@@ -18,6 +18,7 @@
 ##' following parameters:
 ##'
 ##' \describe{
+##' \item{\code{mu, r1, r2}}{Penalty parameters.}
 ##' \item{\code{eps_abs}}{Absolute precision parameter. Default is \code{1e-3}.}
 ##' \item{\code{eps_rel}}{Relative precision parameter. Default is \code{1e-3}.}
 ##' \item{\code{fan_maxinc}}{Maximum number of incremental eigenvalues to compute
@@ -77,13 +78,15 @@ gradfps_prox2 = function(
         r2      = sqrt(p * (d + 1)),
         eps_abs = 1e-3,
         eps_rel = 1e-3,
+        fan_maxiter = 10,
+        fan_maxinc = 100,
         verbose = 1
     )
     opts[names(control)] = control
 
-    gradfps_prox2_(S, x0, d, lambda,
-                   lr, opts$mu, opts$r1, opts$r2,
-                   maxiter, opts$eps_abs, opts$eps_rel,
+    gradfps_prox2_(S, x0, d, lambda, lr, opts$mu, opts$r1, opts$r2,
+                   maxiter, opts$fan_maxinc, opts$fan_maxiter,
+                   opts$eps_abs, opts$eps_rel,
                    opts$verbose)
 }
 

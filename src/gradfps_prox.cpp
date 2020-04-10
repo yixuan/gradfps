@@ -280,7 +280,8 @@ inline void update_x(
 List gradfps_prox2_(
     MapMat S, MapMat x0, int d, double lambda,
     double lr, double mu, double r1, double r2,
-    int maxiter = 500, double eps_abs = 1e-3, double eps_rel = 1e-3, int verbose = 0
+    int maxiter = 500, int fan_maxinc = 100, int fan_maxiter = 10,
+    double eps_abs = 1e-3, double eps_rel = 1e-3, int verbose = 0
 )
 {
     // Dimension of the covariance matrix
@@ -325,7 +326,8 @@ List gradfps_prox2_(
         // prox_f3(u) = u + e, where e is a low-rank matrix
         // z3 <- x + e
         newz3.noalias() = 2.0 * x - z3;
-        prox_eigs_delta_impl(newz3, 3.0 * lr * mu * r1, 3.0 * lr * mu * r2, newz3);
+        prox_eigs_delta_impl(newz3, 3.0 * lr * mu * r1, 3.0 * lr * mu * r2, newz3,
+                             10, 10, 10, 10, fan_maxiter);
         newz3.noalias() += x;
         const double diffz3 = (newz3 - z3).norm();
         z3.swap(newz3);
