@@ -81,6 +81,10 @@ inline double prox_fantope_vec_quadprog(const double* lambda, int p, double l1, 
 
 
 
+// A modified version of the algorithm in
+// Projection onto the probability simplex, Wang and Carreira-Perpinan (2013)
+// https://eng.ucmerced.edu/people/wwang5/papers/SimplexProj.pdf
+//
 // Given x[0] >= x[1] >= ... >= x[n-1], find c such that
 // sum y[i] = sum max(0, x[i] - c) = d, 0 < d <= n
 inline double find_c_max0(const double* x, int n, int d)
