@@ -40,6 +40,9 @@ gradfps_prox = function(
 
     # Default control parameters
     opts = list(
+        mu      = 100,
+        r1      = sqrt(d * (d + 1)),
+        r2      = sqrt(p * (d + 1)),
         eps_abs = 1e-3,
         eps_rel = 1e-3,
         fan_maxiter = 10,
@@ -48,8 +51,8 @@ gradfps_prox = function(
     )
     opts[names(control)] = control
 
-    gradfps_prox_(S, x0, d, lambda, lr, maxiter,
-                  opts$fan_maxinc, opts$fan_maxiter,
+    gradfps_prox_(S, x0, d, lambda, lr, opts$mu, opts$r1, opts$r2,
+                  maxiter, opts$fan_maxinc, opts$fan_maxiter,
                   opts$eps_abs, opts$eps_rel,
                   opts$verbose)
 }
@@ -100,6 +103,9 @@ gradfps_prox_benchmark = function(
 
     # Default control parameters
     opts = list(
+        mu      = 100,
+        r1      = sqrt(d * (d + 1)),
+        r2      = sqrt(p * (d + 1)),
         eps_abs = 1e-3,
         eps_rel = 1e-3,
         fan_maxiter = 10,
@@ -108,8 +114,8 @@ gradfps_prox_benchmark = function(
     )
     opts[names(control)] = control
 
-    gradfps_prox_benchmark_(S, Pi, x0, d, lambda, lr, maxiter,
-                            opts$fan_maxinc, opts$fan_maxiter,
+    gradfps_prox_benchmark_(S, Pi, x0, d, lambda, lr, opts$mu, opts$r1, opts$r2,
+                            maxiter, opts$fan_maxinc, opts$fan_maxiter,
                             opts$eps_abs, opts$eps_rel,
                             opts$verbose)
 }
@@ -190,6 +196,9 @@ gradfps_prox_omd = function(
 
     # Default control parameters
     opts = list(
+        mu      = 100,
+        r1      = sqrt(d * (d + 1)),
+        r2      = sqrt(p * (d + 1)),
         eps_abs = 1e-3,
         eps_rel = 1e-3,
         fan_maxiter = 10,
@@ -198,8 +207,8 @@ gradfps_prox_omd = function(
     )
     opts[names(control)] = control
 
-    gradfps_prox_omd_(S, x0, d, lambda, delta, lr, maxiter,
-                      opts$fan_maxinc, opts$fan_maxiter,
+    gradfps_prox_omd_(S, x0, d, lambda, delta, lr, opts$mu, opts$r1, opts$r2,
+                      maxiter, opts$fan_maxinc, opts$fan_maxiter,
                       opts$eps_abs, opts$eps_rel,
                       opts$verbose)
 }

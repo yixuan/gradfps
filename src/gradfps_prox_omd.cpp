@@ -41,8 +41,8 @@ inline double projection_diff(const MatrixXd& u, const MatrixXd& v)
 // -tr(S*X) + lambda * ||X||_1 + delta * ||X||_r^2 / 2
 // [[Rcpp::export]]
 List gradfps_prox_omd_(MapMat S, MapMat x0, int d, double lambda, double delta,
-                       double lr = 0.001, int maxiter = 500,
-                       int fan_maxinc = 100, int fan_maxiter = 10,
+                       double lr, double mu, double r1, double r2,
+                       int maxiter = 500, int fan_maxinc = 100, int fan_maxiter = 10,
                        double eps_abs = 1e-3, double eps_rel = 1e-3,
                        int verbose = 0)
 {
@@ -62,6 +62,8 @@ List gradfps_prox_omd_(MapMat S, MapMat x0, int d, double lambda, double delta,
     std::vector<double> err;
 
     int fan_inc = 2 * d;
+    const double l1 = lr * mu * r1;
+    const double l2 = lr * mu / std::sqrt(double(p));
     const double radius = std::sqrt(double(d));
     double step = lr;
 
@@ -79,8 +81,7 @@ List gradfps_prox_omd_(MapMat S, MapMat x0, int d, double lambda, double delta,
 
         // z1 <- z1 - x + prox_fantope(2 * x - z1)
         prox_in.noalias() = x + x - z1 + step * S;
-        double newdsum;
-        fan_inc = prox_fantope_impl(prox_in, d, fan_inc, fan_maxiter, prox_out, newdsum,
+        fan_inc = prox_fantope_impl(prox_in, l1, l2, d, fan_inc, fan_maxiter, prox_out,
                                     0.01 / std::sqrt(i + 1.0), verbose);
         z1.noalias() += (prox_out - x);
 

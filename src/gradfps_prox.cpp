@@ -40,8 +40,8 @@ inline double projection_diff(const MatrixXd& u, const MatrixXd& v)
 
 // [[Rcpp::export]]
 List gradfps_prox_(MapMat S, MapMat x0, int d, double lambda,
-                   double lr = 0.001, int maxiter = 500,
-                   int fan_maxinc = 100, int fan_maxiter = 10,
+                   double lr, double mu, double r1, double r2,
+                   int maxiter = 500, int fan_maxinc = 100, int fan_maxiter = 10,
                    double eps_abs = 1e-3, double eps_rel = 1e-3,
                    int verbose = 0)
 {
@@ -60,6 +60,8 @@ List gradfps_prox_(MapMat S, MapMat x0, int d, double lambda,
     std::vector<double> err_z2;
 
     int fan_inc = 2 * d;
+    const double l1 = lr * mu * r1;
+    const double l2 = lr * mu / std::sqrt(double(p));
     double step = lr;
 
     int i = 0;
@@ -70,8 +72,7 @@ List gradfps_prox_(MapMat S, MapMat x0, int d, double lambda,
 
         // z1 <- -zdiff + prox_fantope(z2)
         newz2.noalias() = z2 + step * S;
-        double newdsum;
-        fan_inc = prox_fantope_impl(newz2, d, fan_inc, fan_maxiter, newz1, newdsum,
+        fan_inc = prox_fantope_impl(newz2, l1, l2, d, fan_inc, fan_maxiter, newz1,
                                     0.001 / std::sqrt(i + 1.0), verbose);
         newz2.noalias() = 0.5 * (z2 - z1);
         newz1.noalias() -= newz2;
@@ -144,8 +145,8 @@ List gradfps_prox_(MapMat S, MapMat x0, int d, double lambda,
 
 // [[Rcpp::export]]
 List gradfps_prox_benchmark_(MapMat S, MapMat Pi, MapMat x0, int d, double lambda,
-                             double lr = 0.001, int maxiter = 500,
-                             int fan_maxinc = 100, int fan_maxiter = 10,
+                             double lr, double mu, double r1, double r2,
+                             int maxiter = 500, int fan_maxinc = 100, int fan_maxiter = 10,
                              double eps_abs = 1e-3, double eps_rel = 1e-3,
                              int verbose = 0)
 {
@@ -164,8 +165,8 @@ List gradfps_prox_benchmark_(MapMat S, MapMat Pi, MapMat x0, int d, double lambd
 
     double t1, t2;
     int fan_inc = 2 * d;
-    // double dsum = d;
-    // bool lr_const = false;
+    const double l1 = lr * mu * r1;
+    const double l2 = lr * mu / std::sqrt(double(p));
     double step = lr;
 
     for(int i = 0; i < maxiter; i++)
@@ -183,8 +184,7 @@ List gradfps_prox_benchmark_(MapMat S, MapMat Pi, MapMat x0, int d, double lambd
 
         // z1 <- -zdiff + prox_fantope(z2)
         z2.noalias() += step * S;
-        double newdsum;
-        fan_inc = prox_fantope_impl(z2, d, fan_inc, fan_maxiter, newz1, newdsum,
+        fan_inc = prox_fantope_impl(z2, l1, l2, d, fan_inc, fan_maxiter, newz1,
                                     0.001 / std::sqrt(i + 1.0), verbose);
         newz1.noalias() -= zdiff;
 
