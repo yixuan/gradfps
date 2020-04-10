@@ -2,14 +2,51 @@
 % Please edit documentation in R/gradfps.R
 \name{gradfps_prox}
 \alias{gradfps_prox}
+\alias{gradfps_prox2}
 \alias{gradfps_prox_benchmark}
+\alias{gradfps_subgrad}
 \title{The GradFPS algorithm for sparse principal component analysis}
 \usage{
-gradfps_prox(S, d, lambda, x0 = NULL, lr = 0.001, maxiter = 100L,
-  control = list())
+gradfps_prox(
+  S,
+  d,
+  lambda,
+  x0 = NULL,
+  lr = 0.001,
+  maxiter = 100L,
+  control = list()
+)
 
-gradfps_prox_benchmark(S, Pi, d, lambda, x0 = NULL, lr = 0.001,
-  maxiter = 100L, control = list())
+gradfps_prox2(
+  S,
+  d,
+  lambda,
+  x0 = NULL,
+  lr = 0.001,
+  maxiter = 100L,
+  control = list()
+)
+
+gradfps_prox_benchmark(
+  S,
+  Pi,
+  d,
+  lambda,
+  x0 = NULL,
+  lr = 0.001,
+  maxiter = 100L,
+  control = list()
+)
+
+gradfps_subgrad(
+  S,
+  d,
+  lambda,
+  x0 = NULL,
+  lr = 0.001,
+  maxiter = 100L,
+  control = list()
+)
 }
 \arguments{
 \item{S}{The sample covariance matrix.}
@@ -39,6 +76,7 @@ The \code{control} argument is a list that can supply any of the
 following parameters:
 
 \describe{
+\item{\code{mu, r1, r2}}{Penalty parameters.}
 \item{\code{eps_abs}}{Absolute precision parameter. Default is \code{1e-3}.}
 \item{\code{eps_rel}}{Relative precision parameter. Default is \code{1e-3}.}
 \item{\code{fan_maxinc}}{Maximum number of incremental eigenvalues to compute

@@ -5,12 +5,17 @@
 \alias{view_evec}
 \title{Visualization of Matrices}
 \usage{
-view_matrix(mat, legend_title = "Coefficient", bar_height = 10,
-  font_size = 20)
+view_matrix(mat, legend_title = "Coefficient", bar_height = 10, font_size = 20)
 
-view_evec(evecs, xlab = "Index of Variables", ylab = "Index of PCs",
-  legend_title = "Factor\\nLoading", asp = 0.2, bar_height = 6,
-  font_size = 20)
+view_evec(
+  evecs,
+  xlab = "Index of Variables",
+  ylab = "Index of PCs",
+  legend_title = "Factor\\nLoading",
+  asp = 0.2,
+  bar_height = 6,
+  font_size = 20
+)
 }
 \arguments{
 \item{mat, evec}{The matrix to be visualized.}

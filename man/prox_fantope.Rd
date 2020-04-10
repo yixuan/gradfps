@@ -4,8 +4,16 @@
 \alias{prox_fantope}
 \title{Proximal operator on Fantope}
 \usage{
-prox_fantope(A, B, alpha, d, eps = 1e-05, inc = 1L, maxiter = 10L,
-  verbose = 0L)
+prox_fantope(
+  A,
+  B,
+  alpha,
+  d,
+  eps = 1e-05,
+  inc = 1L,
+  maxiter = 10L,
+  verbose = 0L
+)
 }
 \arguments{
 \item{A}{A symmetric matrix.}

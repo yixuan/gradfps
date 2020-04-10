@@ -4,8 +4,16 @@
 \alias{gradfps_prox_omd}
 \title{The GradFPS algorithm for sparse principal component analysis}
 \usage{
-gradfps_prox_omd(S, d, lambda, delta, x0 = NULL, lr = 0.001,
-  maxiter = 100L, control = list())
+gradfps_prox_omd(
+  S,
+  d,
+  lambda,
+  delta,
+  x0 = NULL,
+  lr = 0.001,
+  maxiter = 100L,
+  control = list()
+)
 }
 \arguments{
 \item{S}{The sample covariance matrix.}
