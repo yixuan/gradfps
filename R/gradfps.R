@@ -40,6 +40,7 @@ gradfps_prox = function(
     }
 
     # Default control parameters
+    p = nrow(S)
     opts = list(
         mu      = 100,
         r1      = sqrt(d * (d + 1)),
@@ -72,6 +73,7 @@ gradfps_prox2 = function(
     }
 
     # Default control parameters
+    p = nrow(S)
     opts = list(
         mu      = 100,
         r1      = sqrt(d * (d + 1)),
@@ -105,6 +107,7 @@ gradfps_prox_benchmark = function(
     }
 
     # Default control parameters
+    p = nrow(S)
     opts = list(
         mu      = 100,
         r1      = sqrt(d * (d + 1)),
@@ -198,6 +201,7 @@ gradfps_prox_omd = function(
     }
 
     # Default control parameters
+    p = nrow(S)
     opts = list(
         mu      = 100,
         r1      = sqrt(d * (d + 1)),
