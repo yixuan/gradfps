@@ -64,6 +64,14 @@ private:
     bool     m_mode;            // To compute the largest eigenvalues (true) or the smallest (false)
 
     // x <- Qx
+    //        [  d                  ]
+    //        [  e   d              ]
+    // Qmat = [  v1  e   d          ]
+    //        [  v1  v2  e   d      ]
+    //        [  v1  v2  v3  e   d  ]
+    // Q = H1 * H2 * ... * Hn-2
+    // Hi = I - tau * ui * ui'
+    // ui = (0, ..., 0, 1, vi)
     inline void apply_Qx(double* xptr) const
     {
         int vlen = 1;

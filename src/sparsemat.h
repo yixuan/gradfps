@@ -5,7 +5,7 @@
 #include "common.h"
 #include "symmat.h"
 
-// Create a SIMD vector of x[ind[0]], x[ind[1]], x[ind[2]], ...
+// Create a SIMD vector v = x[ind[0]], x[ind[1]], x[ind[2]], ...
 template <int simd_size>
 inline xsimd::batch<double, simd_size> discontinuous_load(const double* x, const int* ind)
 {
@@ -15,6 +15,7 @@ inline xsimd::batch<double, simd_size> discontinuous_load(const double* x, const
     return xsimd::load_aligned(data);
 }
 
+// Write a SIMD vector v to x[ind[0]], x[ind[1]], x[ind[2]], ...
 template <int simd_size>
 inline void discontinuous_store_add(const xsimd::batch<double, simd_size>& v, double* x, const int* ind)
 {
