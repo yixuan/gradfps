@@ -8,24 +8,53 @@ using Rcpp::NumericVector;
 using Rcpp::NumericMatrix;
 using Rcpp::List;
 
-// res += soft_threshold(x, penalty)
-inline void add_soft_threshold(const MatrixXd& x, double penalty, MatrixXd& res)
+// z1 <- (z1 - z2) / 2 + prox_fantope(z2)
+// Returns ||newz1 - z1||_F
+inline double prox_update_z1(RefMat z1, const RefConstMat& z2, const RefConstMat& proxf)
 {
-    const int n = x.rows();
+    const int p = z1.rows();
+    const int len = p * p;
+    double* z1p = z1.data();
+    const double* z2p = z2.data();
+    const double* pfp = proxf.data();
+    double diff = 0.0;
 
-    for(int j = 0; j < n; j++)
+    #pragma omp simd aligned(z1p, z2p, pfp: 32)
+    for(int i = 0; i < len; i++)
     {
-        for(int i = 0; i < n; i++)
-        {
-            const double xij = x.coeff(i, j);
-            if(xij > penalty)
-            {
-                res.coeffRef(i, j) += (xij - penalty);
-            } else if(xij < -penalty) {
-                res.coeffRef(i, j) += (xij + penalty);
-            }
-        }
+        const double newz1 = 0.5 * (z1p[i] - z2p[i]) + pfp[i];
+        diff += std::pow(newz1 - z1p[i], 2);
+        z1p[i] = newz1;
     }
+    return std::sqrt(diff);
+}
+
+// z2 <- (z2 - z1) / 2 + soft_threshold(z1, penalty)
+//     = { (z1 + z2) / 2 - penalty, if z1 > penalty
+//       { (z1 + z2) / 2 + penalty, if z1 < -penalty
+//       { (z2 - z1) / 2          , otherwise
+// Returns ||newz2 - z2||_F
+inline double prox_update_z2(const RefConstMat& z1, RefMat z2, double penalty)
+{
+    const int p = z1.rows();
+    const int len = p * p;
+    const double* z1p = z1.data();
+    double* z2p = z2.data();
+    double diff = 0.0;
+
+    #pragma omp simd aligned(z1p, z2p: 32)
+    for(int i = 0; i < len; i++)
+    {
+        const double z1i = z1p[i];
+        const double z2i = z2p[i];
+        const double x = 0.5 * (z1i + z2i);
+        const double newz2 = (z1i > penalty) ?
+                             (x - penalty) :
+                             ( (z1i < -penalty) ? (x + penalty) : 0.5 * (z2i - z1i) );
+        diff += std::pow(newz2 - z2i, 2);
+        z2p[i] = newz2;
+    }
+    return std::sqrt(diff);
 }
 
 // For two orthogonal matrices U and V, U'U = V'V = I_d,
@@ -36,6 +65,23 @@ inline double projection_diff(const MatrixXd& u, const MatrixXd& v)
     MatrixXd uv(d, d);
     uv.noalias() = u.transpose() * v;
     return 2.0 * d - 2.0 * uv.squaredNorm();
+}
+
+// res = soft_threshold(x, penalty)
+inline void soft_threshold(const MatrixXd& x, double penalty, MatrixXd& res)
+{
+    const int p = x.rows();
+    const int len = p * p;
+    const double* xp = x.data();
+    double* rp = res.data();
+
+    #pragma omp simd aligned(xp, rp: 32)
+    for(int i = 0; i < len; i++)
+    {
+        rp[i] = (xp[i] > penalty) ?
+                (xp[i] - penalty) :
+                ( xp[i] < -penalty ? xp[i] + penalty : 0.0 );
+    }
 }
 
 // [[Rcpp::export]]
@@ -51,7 +97,7 @@ List gradfps_prox_(MapMat S, MapMat x0, int d, double lambda,
     if(n != p)
         Rcpp::stop("S must be square");
 
-    MatrixXd z1 = x0, z2 = x0, newz1(p, p), newz2(p, p);
+    MatrixXd z1 = x0, z2 = x0, prox_in_out(p, p);
     MatrixXd evecs(p, d), newevecs(p, d);
 
     // Metrics in each iteration
@@ -70,12 +116,11 @@ List gradfps_prox_(MapMat S, MapMat x0, int d, double lambda,
         if(verbose > 0)
             Rcpp::Rcout << "iter = " << i << std::endl;
 
-        // z1 <- -zdiff + prox_fantope(z2)
-        newz2.noalias() = z2 + step * S;
-        fan_inc = prox_fantope_impl(newz2, l1, l2, d, fan_inc, fan_maxiter, newz1,
+        // z1 <- (z1 - z2) / 2 + prox_fantope(z2)
+        prox_in_out.noalias() = z2 + step * S;
+        fan_inc = prox_fantope_impl(prox_in_out, l1, l2, d, fan_inc, fan_maxiter, prox_in_out,
                                     0.001 / std::sqrt(i + 1.0), verbose);
-        newz2.noalias() = 0.5 * (z2 - z1);
-        newz1.noalias() -= newz2;
+        const double diffz1 = prox_update_z1(z1, z2, prox_in_out);
 
         if(verbose > 1)
             Rcpp::Rcout << "fan_dim = " << fan_inc << std::endl;
@@ -83,18 +128,14 @@ List gradfps_prox_(MapMat S, MapMat x0, int d, double lambda,
         fan_inc = std::min(fan_inc, fan_maxinc);
         fan_inc = std::min(fan_inc, int(p / 10));
 
-        // l1 <- soft_threshold(z1, lr * lambda)
-        // z2 <- zdiff + l1
-        add_soft_threshold(z1, step * lambda, newz2);
+        // z2 <- (z2 - z1) / 2 + soft_threshold(z1, penalty)
+        const double diffz2 = prox_update_z2(z1, z2, step * lambda);
 
-        err_z1.push_back((newz1 - z1).norm());
-        err_z2.push_back((newz2 - z2).norm());
+        err_z1.push_back(diffz1);
+        err_z2.push_back(diffz2);
 
-        z1.swap(newz1);
-        z2.swap(newz2);
-
-        // Reuse the memory of newz1
-        MatrixXd& x = newz1;
+        // Reuse the memory of prox_in_out
+        MatrixXd& x = prox_in_out;
         x.noalias() = 0.5 * (z1 + z2);
         Spectra::DenseSymMatProd<double> op(x);
         Spectra::SymEigsSolver< double, Spectra::LARGEST_ALGE, Spectra::DenseSymMatProd<double> > eigs(&op, d, 3 * d);
@@ -120,11 +161,10 @@ List gradfps_prox_(MapMat S, MapMat x0, int d, double lambda,
         evecs.swap(newevecs);
     }
 
-    // Reuse the memory of newz1
-    MatrixXd& x = newz1;
+    // Reuse the memory of prox_in_out
+    MatrixXd& x = prox_in_out;
     // x.noalias() = 0.5 * (z1 + z2);
-    x.setZero();
-    add_soft_threshold(z1, step * lambda, x);
+    soft_threshold(z1, step * lambda, x);
 
     Spectra::DenseSymMatProd<double> op(x);
     Spectra::SymEigsSolver< double, Spectra::LARGEST_ALGE, Spectra::DenseSymMatProd<double> > eigs(&op, d, 3 * d);
@@ -132,7 +172,7 @@ List gradfps_prox_(MapMat S, MapMat x0, int d, double lambda,
     eigs.compute();
 
     return List::create(
-        Rcpp::Named("projection") = newz1,
+        Rcpp::Named("projection") = prox_in_out,
         Rcpp::Named("evecs") = eigs.eigenvectors(),
         Rcpp::Named("err_v") = err_v,
         Rcpp::Named("err_z1") = err_z1,
@@ -156,7 +196,7 @@ List gradfps_prox_benchmark_(MapMat S, MapMat Pi, MapMat x0, int d, double lambd
     if(n != p)
         Rcpp::stop("S must be square");
 
-    MatrixXd z1 = x0, z2 = x0, zdiff(p, p), newz1(p, p);
+    MatrixXd z1 = x0, z2 = x0, prox_in_out(p, p);
 
     // Metrics in each iteration
     std::vector<double> err_x;  // directly use X_hat
@@ -171,28 +211,16 @@ List gradfps_prox_benchmark_(MapMat S, MapMat Pi, MapMat x0, int d, double lambd
 
     for(int i = 0; i < maxiter; i++)
     {
-        // if(!lr_const)
-        //     step = lr / std::sqrt(i + 1.0);
-
         if(verbose > 1 || (verbose > 0 && i % 50 == 0))
             Rcpp::Rcout << "\niter = " << i << ", alpha = " << step << std::endl;
 
         t1 = get_wall_time();
 
-        // zdiff <- (z2 - z1) / 2
-        zdiff.noalias() = 0.5 * (z2 - z1);
-
-        // z1 <- -zdiff + prox_fantope(z2)
-        z2.noalias() += step * S;
-        fan_inc = prox_fantope_impl(z2, l1, l2, d, fan_inc, fan_maxiter, newz1,
+        // z1 <- (z1 - z2) / 2 + prox_fantope(z2)
+        prox_in_out.noalias() = z2 + step * S;
+        fan_inc = prox_fantope_impl(prox_in_out, l1, l2, d, fan_inc, fan_maxiter, prox_in_out,
                                     0.001 / std::sqrt(i + 1.0), verbose);
-        newz1.noalias() -= zdiff;
-
-        /* if(newdsum > dsum)
-        {
-            lr_const = true;
-            step = lr;
-        } */
+        prox_update_z1(z1, z2, prox_in_out);
 
         if(verbose > 1)
             Rcpp::Rcout << "fan_dim = " << fan_inc << std::endl;
@@ -200,17 +228,13 @@ List gradfps_prox_benchmark_(MapMat S, MapMat Pi, MapMat x0, int d, double lambd
         fan_inc = std::min(fan_inc, fan_maxinc);
         fan_inc = std::min(fan_inc, int(p / 10));
 
-        // l1 <- soft_threshold(z1, lr * lambda)
-        // z2 <- zdiff + l1
-        z2.swap(zdiff);
-        add_soft_threshold(z1, step * lambda, z2);
+        // z2 <- (z2 - z1) / 2 + soft_threshold(z1, penalty)
+        prox_update_z2(z1, z2, step * lambda);
 
-        z1.swap(newz1);
-        // Reuse the memory of zdiff
-        MatrixXd& x = zdiff;
+        // Reuse the memory of prox_in_out
+        MatrixXd& x = prox_in_out;
         // x.noalias() = 0.5 * (z1 + z2);
-        x.setZero();
-        add_soft_threshold(z1, step * lambda, x);
+        soft_threshold(z1, step * lambda, x);
 
         Spectra::DenseSymMatProd<double> op(x);
         Spectra::SymEigsSolver< double, Spectra::LARGEST_ALGE, Spectra::DenseSymMatProd<double> > eigs(&op, d, 3 * d);
@@ -225,7 +249,7 @@ List gradfps_prox_benchmark_(MapMat S, MapMat Pi, MapMat x0, int d, double lambd
     }
 
     return List::create(
-        Rcpp::Named("projection") = zdiff,
+        Rcpp::Named("projection") = prox_in_out,
         Rcpp::Named("err_x") = err_x,
         Rcpp::Named("err_v") = err_v,
         Rcpp::Named("times") = times,
@@ -242,7 +266,7 @@ List gradfps_prox_benchmark_(MapMat S, MapMat Pi, MapMat x0, int d, double lambd
 //       { x + penalty, if 2 * x - z1 < -penalty
 //       { z1 - x     , otherwise
 // Returns ||newz1 - z1||_F
-inline double update_z1(const RefConstMat& x, RefMat z1, double penalty)
+inline double prox2_update_z1(const RefConstMat& x, RefMat z1, double penalty)
 {
     const int p = x.rows();
     const double* xptr = x.data();
@@ -263,7 +287,7 @@ inline double update_z1(const RefConstMat& x, RefMat z1, double penalty)
 
 // newx <- P_X(zbar + alpha * S), zbar = (z1 + z2 + z3) / 3, z2 = x + shift * I
 // Before calling this function, x contains the old value
-inline void update_x(
+inline void prox2_update_x(
     const RefConstMat& z1, double z2_shift, const RefConstMat& z3,
     double alpha, const RefConstMat& S, int d, RefMat x
 )
@@ -307,7 +331,7 @@ List gradfps_prox2_(
 
         // z1 <- z1 - x + prox_f1(2 * x - z1)
         //     = z1 - x + soft_threshold(2 * x - z1, 3 * lr * lambda)
-        const double diffz1 = update_z1(x, z1, 3.0 * lr * lambda);
+        const double diffz1 = prox2_update_z1(x, z1, 3.0 * lr * lambda);
 
         // z2 <- z2 - x + prof_f2(2 * x - z2)
         // prox_f2(u) = u + min(beta, 1) * s * I,
@@ -336,7 +360,7 @@ List gradfps_prox2_(
         err_z3.push_back(diffz3);
 
         // Update x
-        update_x(z1, z2_shift, z3, lr, S, d, x);
+        prox2_update_x(z1, z2_shift, z3, lr, S, d, x);
 
         // Compute eigenvectors
         Spectra::DenseSymMatProd<double> op(x);
@@ -366,8 +390,7 @@ List gradfps_prox2_(
     // x = prox_f1(2 * x - z1)
     // Reuse the memory of newz3
     newz3.noalias() = 2.0 * x - z1;
-    x.setZero();
-    add_soft_threshold(newz3, 3.0 * lr * lambda, x);
+    soft_threshold(newz3, 3.0 * lr * lambda, x);
 
     Spectra::DenseSymMatProd<double> op(x);
     Spectra::SymEigsSolver< double, Spectra::LARGEST_ALGE, Spectra::DenseSymMatProd<double> > eigs(&op, d, 3 * d);
