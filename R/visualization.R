@@ -10,6 +10,7 @@
 ##' @param asp          Aspect ratio of the plot.
 ##' @param bar_height   Height of the colorbar.
 ##' @param font_size    Base font size for the plot.
+##' @param padding      The padding between the axis border and the plot area.
 ##'
 ##' @rdname visualization
 ##' @author Yixuan Qiu \url{https://statr.me}
@@ -30,7 +31,8 @@
 ##' view_evec(v)
 
 # Visualization of a matrix by coloring its coefficients
-view_matrix = function(mat, legend_title = "Coefficient", bar_height = 10, font_size = 20)
+view_matrix = function(mat, xlab = "", ylab = "", legend_title = "Coefficient",
+                       bar_height = 10, font_size = 20, padding = 0)
 {
     mat = as.matrix(mat)
     lo = min(mat)
@@ -46,10 +48,15 @@ view_matrix = function(mat, legend_title = "Coefficient", bar_height = 10, font_
     )
 
     # Axis breaks
-    breaks = pretty(gdat$x, n = 10)
+    breaks_x = pretty(gdat$x, n = 10)
     # Start from 1, not 0
-    breaks[breaks == 0] = 1
-    breaks = unique(breaks)
+    breaks_x[breaks_x == 0] = 1
+    breaks_x = unique(breaks_x)
+
+    breaks_y = pretty(gdat$y, n = 10)
+    # Start from 1, not 0
+    breaks_y[breaks_y == 0] = 1
+    breaks_y = unique(breaks_y)
 
     # Map the color spectrum to [-r, r]
     ngrid = 1001
@@ -69,13 +76,17 @@ view_matrix = function(mat, legend_title = "Coefficient", bar_height = 10, font_
 
     ggplot(gdat, aes(x = x, y = y, fill = z)) +
         geom_tile() +
-        scale_x_continuous("", breaks = breaks, expand = c(0, 0)) +
-        scale_y_reverse("", breaks = breaks, expand = c(0, 0)) +
+        scale_x_continuous(xlab, limits = c(0.5, max(gdat$x) + 0.5),
+                           breaks = breaks_x, expand = c(padding, padding)) +
+        scale_y_reverse(ylab, limits = c(max(gdat$y) + 0.5, 0.5),
+                        breaks = breaks_y, expand = c(padding, padding)) +
         scale_fill_gradientn(legend_title, colors = colors) +
         guides(fill = guide_colorbar(barheight = bar_height)) +
         coord_fixed() +
         theme_bw(base_size = font_size) +
-        theme(axis.title = element_blank())
+        theme(axis.title.x = if(xlab == "") element_blank() else element_text(),
+              axis.title.y = if(ylab == "") element_blank() else element_text(),
+              panel.grid = element_blank())
 }
 
 ##' @rdname visualization

@@ -5,7 +5,15 @@
 \alias{view_evec}
 \title{Visualization of Matrices}
 \usage{
-view_matrix(mat, legend_title = "Coefficient", bar_height = 10, font_size = 20)
+view_matrix(
+  mat,
+  xlab = "",
+  ylab = "",
+  legend_title = "Coefficient",
+  bar_height = 10,
+  font_size = 20,
+  padding = 0
+)
 
 view_evec(
   evecs,
@@ -20,15 +28,17 @@ view_evec(
 \arguments{
 \item{mat, evec}{The matrix to be visualized.}
 
+\item{xlab}{X-axis label.}
+
+\item{ylab}{Y-axis label.}
+
 \item{legend_title}{Title of the colorbar legend.}
 
 \item{bar_height}{Height of the colorbar.}
 
 \item{font_size}{Base font size for the plot.}
 
-\item{xlab}{X-axis label.}
-
-\item{ylab}{Y-axis label.}
+\item{padding}{The padding between the axis border and the plot area.}
 
 \item{asp}{Aspect ratio of the plot.}
 }
