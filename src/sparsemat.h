@@ -7,7 +7,7 @@
 
 // Create a SIMD vector v = x[ind[0]], x[ind[1]], x[ind[2]], ...
 template <int simd_size>
-inline xsimd::batch<double, simd_size> discontinuous_load(const double* x, const int* ind)
+inline xsimd::batch<double, simd_size> gather(const double* x, const int* ind)
 {
     alignas(simd_size * sizeof(double)) double data[simd_size];
     for(int i = 0; i < simd_size; i++)
@@ -15,9 +15,9 @@ inline xsimd::batch<double, simd_size> discontinuous_load(const double* x, const
     return xsimd::load_aligned(data);
 }
 
-// Write a SIMD vector v to x[ind[0]], x[ind[1]], x[ind[2]], ...
+// Add a SIMD vector v to x[ind[0]], x[ind[1]], x[ind[2]], ...
 template <int simd_size>
-inline void discontinuous_store_add(const xsimd::batch<double, simd_size>& v, double* x, const int* ind)
+inline void scatter_add(const xsimd::batch<double, simd_size>& v, double* x, const int* ind)
 {
     alignas(simd_size * sizeof(double)) double data[simd_size];
     v.store_aligned(data);
@@ -29,13 +29,13 @@ inline void discontinuous_store_add(const xsimd::batch<double, simd_size>& v, do
 #ifdef __AVX__
 
 template <>
-inline xsimd::batch<double, 4> discontinuous_load<4>(const double* x, const int* ind)
+inline xsimd::batch<double, 4> gather<4>(const double* x, const int* ind)
 {
     return xsimd::batch<double, 4>(x[ind[0]], x[ind[1]], x[ind[2]], x[ind[3]]);
 }
 
 template <>
-inline void discontinuous_store_add<4>(const xsimd::batch<double, 4>& v, double* x, const int* ind)
+inline void scatter_add<4>(const xsimd::batch<double, 4>& v, double* x, const int* ind)
 {
     x[ind[0]] += v[0];
     x[ind[1]] += v[1];
@@ -47,13 +47,13 @@ inline void discontinuous_store_add<4>(const xsimd::batch<double, 4>& v, double*
 #elif defined(__SSE__)
 
 template <>
-inline xsimd::batch<double, 2> discontinuous_load<2>(const double* x, const int* ind)
+inline xsimd::batch<double, 2> gather<2>(const double* x, const int* ind)
 {
     return xsimd::batch<double, 2>(x[ind[0]], x[ind[1]]);
 }
 
 template <>
-inline void discontinuous_store_add<2>(const xsimd::batch<double, 2>& v, double* x, const int* ind)
+inline void scatter_add<2>(const xsimd::batch<double, 2>& v, double* x, const int* ind)
 {
     x[ind[0]] += v[0];
     x[ind[1]] += v[1];
@@ -178,7 +178,6 @@ public:
         // Zero out y vector
         std::fill(y_out, y_out + m_n, 0.0);
 
-        const int nnz = m_x.size();
         const double* elem_ptr = &m_x[0];
         const int* row_id_ptr = &m_i[0];
         const int* p_ptr = &m_p[0];
@@ -212,8 +211,8 @@ public:
             {
                 vec elem_simd = xsimd::load_unaligned(elem_ptr);
                 vec prod = elem_simd * x_in_col_simd;
-                discontinuous_store_add<simd_size>(prod, y_out, row_id_ptr);
-                vec x_in_row_simd = discontinuous_load<simd_size>(x_in, row_id_ptr);
+                scatter_add<simd_size>(prod, y_out, row_id_ptr);
+                vec x_in_row_simd = gather<simd_size>(x_in, row_id_ptr);
                 y_out_col += xsimd::hadd(elem_simd * x_in_row_simd);
             }
             for( ; elem_ptr < col_end; elem_ptr++, row_id_ptr++)
