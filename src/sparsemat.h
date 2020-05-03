@@ -32,6 +32,11 @@ template <>
 inline xsimd::batch<double, 4> gather<4>(const double* x, const int* ind)
 {
     return xsimd::batch<double, 4>(x[ind[0]], x[ind[1]], x[ind[2]], x[ind[3]]);
+    // For AVX2
+    // xsimd::batch<int, 4> indv;
+    // indv.load_unaligned(ind);
+    // __m256d res = _mm256_i32gather_pd(x, indv, sizeof(double));
+    // return res;
 }
 
 template <>
