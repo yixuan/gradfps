@@ -49,7 +49,7 @@ gradfps_prox = function(
         eps_rel = 1e-3,
         fan_maxiter = 10,
         fan_maxinc = 100,
-        verbose = 1
+        verbose = 0
     )
     opts[names(control)] = control
 
@@ -82,7 +82,7 @@ gradfps_prox2 = function(
         eps_rel = 1e-3,
         fan_maxiter = 10,
         fan_maxinc = 100,
-        verbose = 1
+        verbose = 0
     )
     opts[names(control)] = control
 
@@ -116,7 +116,7 @@ gradfps_prox_benchmark = function(
         eps_rel = 1e-3,
         fan_maxiter = 10,
         fan_maxinc = 100,
-        verbose = 1
+        verbose = 0
     )
     opts[names(control)] = control
 
@@ -146,7 +146,7 @@ gradfps_subgrad = function(
         r2      = sqrt(p * (d + 1)),
         eps_abs = 1e-3,
         eps_rel = 1e-3,
-        verbose = 1
+        verbose = 0
     )
     opts[names(control)] = control
 
@@ -240,7 +240,7 @@ gradfps_prox_omd = function(
         eps_rel = 1e-3,
         fan_maxiter = 10,
         fan_maxinc = 100,
-        verbose = 1
+        verbose = 0
     )
     opts[names(control)] = control
 
