@@ -11,4 +11,5 @@ Encoding: UTF-8
 LazyData: true
 Imports: graphics, Matrix, Rcpp, RSpectra, ggplot2
 LinkingTo: Rcpp, RcppEigen, RSpectra, BH, RcppXsimd
+SystemRequirements: C++11
 RoxygenNote: 7.1.0
