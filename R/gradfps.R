@@ -156,6 +156,36 @@ gradfps_subgrad = function(
                      opts$verbose)
 }
 
+##' @rdname gradfps_prox
+gradfps_subgrad_benchmark = function(
+    S, Pi, d, lambda, x0 = NULL, lr = 0.001, maxiter = 100L, control = list()
+)
+{
+    # Initial value
+    if(is.null(x0))
+    {
+        e = RSpectra::eigs_sym(S, d, which = "LA")
+        x0 = tcrossprod(e$vectors)
+    }
+
+    # Default control parameters
+    p = nrow(S)
+    opts = list(
+        mu      = 100,
+        r1      = sqrt(d * (d + 1)),
+        r2      = sqrt(p * (d + 1)),
+        eps_abs = 1e-3,
+        eps_rel = 1e-3,
+        verbose = 0
+    )
+    opts[names(control)] = control
+
+    gradfps_subgrad_benchmark_(S, Pi, x0, d, lambda,
+                               lr, opts$mu, opts$r1, opts$r2,
+                               maxiter, opts$eps_abs, opts$eps_rel,
+                               opts$verbose)
+}
+
 
 
 ##' The GradFPS algorithm for sparse principal component analysis

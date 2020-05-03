@@ -142,7 +142,6 @@ List gradfps_subgrad_(
                 Rcpp::Rcout << " " << i + 1 << " iterations"<< std::endl;
                 Rcpp::Rcout << "\neigenvalues = " << evals.transpose() << std::endl << std::endl;
             }
-
         }
 
         time1 = get_wall_time();
@@ -236,5 +235,112 @@ List gradfps_subgrad_(
         Rcpp::Named("feasfn")     = fn_feas,
         Rcpp::Named("niter")      = std::min(i + 1, maxiter),
         Rcpp::Named("times")      = times
+    );
+}
+
+// [[Rcpp::export]]
+List gradfps_subgrad_benchmark_(
+    MapMat S, MapMat Pi, MapMat x0, int d, double lambda,
+    double lr, double mu, double r1, double r2,
+    int maxiter = 500, double eps_abs = 1e-3, double eps_rel = 1e-3, int verbose = 0
+)
+{
+    // Dimension of S
+    const int p = S.rows();
+
+    // Projection matrices
+    SymMat x(x0), xold(p), Smat(S);
+    dgCMatrix xsp(p);
+
+    // Metrics in each iteration
+    std::vector<double> err_x;  // directly use X_hat
+    std::vector<double> err_v;  // top d eigenvectors of X_hat
+    std::vector<double> times;
+
+    // Eigenvalue computation
+    // Number of eigenvalue pairs to compute, i.e.,
+    // the largest N and smallest N eigenvalues
+    const int N = 1;
+    // Eigenvalues and eigenvectors
+    VectorXd evals(2 * N), evals_delta(2 * N);
+    MatrixXd evecs(p, 2 * N);
+
+    const double alpha0 = lr;
+    double alpha = alpha0;
+    double time1, time2;
+    for(int i = 0; i < maxiter; i++)
+    {
+        if(verbose)
+        {
+            Rcpp::Rcout << "=";
+            if(i % 50 == 49)
+            {
+                Rcpp::Rcout << " " << i + 1 << " iterations"<< std::endl;
+                Rcpp::Rcout << "\neigenvalues = " << evals.transpose() << std::endl << std::endl;
+            }
+        }
+
+        time1 = get_wall_time();
+        alpha = alpha0 / std::sqrt(i / 10 + 1.0);
+
+        // L1 thresholding, xsp <- soft_thresh(x)
+        xsp.soft_thresh(x, lambda * alpha);
+
+        // Eigenvalue shrinkage
+        eigs_sparse_both_ends_primme<N>(xsp, evals, evecs);
+        for(int i = 0; i < N; i++)
+        {
+            evals_delta[i]     = lambda_max_thresh(evals[i],     alpha * mu * r1);
+            evals_delta[N + i] = lambda_min_thresh(evals[N + i], alpha * mu * r2);
+        }
+        evals_delta.noalias() -= evals;
+        // Save x to xold and update x
+        x.swap(xold);
+        rank_r_update_sparse<2 * N>(x, xsp, evals_delta, evecs);
+
+        // Trace shrinkage
+        const double tbar = x.trace() / p;
+        const double tr_shift = double(d) / double(p) - tbar;
+        const double beta = alpha * mu / std::sqrt(double(p)) / std::abs(tr_shift);
+        // d' = d + s, where d is the original diagonal elements, and s is the shift
+        // If beta >= 1, d <- d' = d + s
+        // Otherwise, d <- (1 - beta) * d + beta * d' = d + beta * s
+        // In a single formula, d <- d + min(beta, 1) * s
+        x.diag_add(std::min(beta, 1.0) * tr_shift);
+
+        // Gradient descent with momentum term
+        if(i >= 2)
+        {
+            // x += (double(i - 1.0) / double(i + 2.0)) * (x - xold) + alpha * Smat;
+            // const double w = (double(i - 1.0) / double(i + 2.0));
+            // x.add(w, -w, alpha, xold, Smat);
+            x.add(alpha, Smat);
+        } else {
+            // x += alpha * Smat;
+            x.add(alpha, Smat);
+        }
+        const double xnorm = x.norm();
+        const double radius = std::sqrt(double(d));
+        // Scale to an L2 ball if too large
+        if(xnorm > radius)
+            x.scale(radius / xnorm);
+
+        // Record elapsed time and objective function values
+        time2 = get_wall_time();
+        times.push_back(time2 - time1);
+
+        err_x.push_back(x.distance(Pi));
+        MatrixXd evecs = eigs_dense_largest_spectra(x, d, 1e-6);
+        err_v.push_back((evecs * evecs.transpose() - Pi).norm());
+    }
+
+    // To make the final solution sparse
+    xsp.soft_thresh(x, lambda * alpha);
+
+    return List::create(
+        Rcpp::Named("projection") = xsp.to_spmat(),
+        Rcpp::Named("err_x") = err_x,
+        Rcpp::Named("err_v") = err_v,
+        Rcpp::Named("times") = times
     );
 }

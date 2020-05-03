@@ -190,6 +190,31 @@ public:
         return std::sqrt(diag + 2 * off_diag);
     }
 
+    // ||x - other||_F, other is also symmetric
+    inline double distance(RefConstMat other) const
+    {
+        const double* x = m_data.data();
+        const double* col_begin = x;
+        const double* col_end = x + m_n;
+
+        double diag = 0.0;
+        double off_diag = 0.0;
+
+        for(int j = 0; j < m_n; j++, col_begin += m_lead_dim, col_end += m_lead_dim)
+        {
+            const double* y = &other.coeffRef(j, j);
+            x = col_begin + j;
+            diag += (*x - *y) * (*x - *y);
+            x = x + 1;
+            y = y + 1;
+
+            for(; x < col_end; x++, y++)
+                off_diag += (*x - *y) * (*x - *y);
+        }
+
+        return std::sqrt(diag + 2 * off_diag);
+    }
+
     // Eigen solver operator - computing matrix-vector multiplication
     inline int rows() const { return m_n; }
     inline int cols() const { return m_n; }
