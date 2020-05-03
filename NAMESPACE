@@ -1,10 +1,10 @@
 importFrom(Rcpp, evalCpp)
-importFrom(stats, coef)
+# importFrom(stats, coef)
 importFrom(graphics, plot)
 importFrom(RSpectra, eigs_sym)
 import(ggplot2)
 
-importFrom(Matrix, sparseMatrix)
+# importFrom(Matrix, sparseMatrix)
 importMethodsFrom(Matrix, coerce)
 importClassesFrom(Matrix, dgCMatrix)
 
@@ -12,8 +12,10 @@ importClassesFrom(Matrix, dgCMatrix)
 # S3method(coef, fastfps)
 # S3method(plot, fastfps)
 
-export(lambda_range, active_set, view_matrix, view_evec)
-export(gradfps_subgrad, gradfps_prox, gradfps_prox2, gradfps_prox_benchmark, gradfps_prox_omd)
+export(lambda_range, active_set)
+export(view_matrix, view_evec)
+export(gradfps_subgrad, gradfps_prox, gradfps_prox2, gradfps_prox_omd)
+export(gradfps_subgrad_benchmark, gradfps_prox_benchmark)
 export(prox_fantope, prox_lp, prox_lp_mat)
 
 useDynLib(gradfps, .registration = TRUE)

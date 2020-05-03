@@ -2,13 +2,13 @@ Package: gradfps
 Type: Package
 Title: Gradient-based Fantope Projection and Selection
 Version: 0.1.0
-Author: Yixuan Qiu
+Author: Yixuan Qiu, Jing Lei, and Kathryn Roeder
 Maintainer: Yixuan Qiu <yixuanq@gmail.com>
 Description: Fast implementation of the Fantope projection and selection
     algorithm for sparse principal component analysis.
 License: GPL
 Encoding: UTF-8
 LazyData: true
-Imports: stats, graphics, Matrix, Rcpp (>= 0.12.19), RSpectra, ggplot2
+Imports: graphics, Matrix, Rcpp, RSpectra, ggplot2
 LinkingTo: Rcpp, RcppEigen, RSpectra, BH, RcppXsimd
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.0
