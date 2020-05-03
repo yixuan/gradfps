@@ -130,7 +130,7 @@ view_evec = function(
     ggplot(gdat, aes(x = x, y = y, fill = z)) +
         geom_tile() +
         scale_x_continuous(xlab, expand = c(0, 0)) +
-        scale_y_reverse(ylab, expand = c(0, 0)) +
+        scale_y_reverse(ylab, breaks = 1:ncol(v), expand = c(0, 0)) +
         scale_fill_gradientn(legend_title, colors = colors) +
         guides(fill = guide_colorbar(barheight = bar_height)) +
         theme_bw(base_size = font_size) +
