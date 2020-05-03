@@ -14,7 +14,7 @@ importClassesFrom(Matrix, dgCMatrix)
 
 export(lambda_range, active_set)
 export(view_matrix, view_evec)
-export(gradfps_subgrad, gradfps_prox, gradfps_prox2, gradfps_prox_omd)
+export(gradfps_subgrad, gradfps_prox, gradfps_prox_omd)
 export(gradfps_subgrad_benchmark, gradfps_prox_benchmark)
 export(prox_fantope, prox_lp, prox_lp_mat)
 

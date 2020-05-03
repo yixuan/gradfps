@@ -300,6 +300,8 @@ List gradfps_prox_benchmark_(MapMat S, MapMat Pi, MapMat x0, int d, double lambd
 
 
 
+/*********************** Another implementation ***********************
+
 // z1 <- z1 - x + prox_f1(2 * x - z1)
 //     = z1 - x + soft_threshold(2 * x - z1, penalty)
 //     = { x - penalty, if 2 * x - z1 > penalty
@@ -448,3 +450,5 @@ List gradfps_prox2_(
         Rcpp::Named("z3") = z3
     );
 }
+
+*********************** End of another implementation ***********************/
