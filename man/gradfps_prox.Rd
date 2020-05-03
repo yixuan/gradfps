@@ -2,22 +2,12 @@
 % Please edit documentation in R/gradfps.R
 \name{gradfps_prox}
 \alias{gradfps_prox}
-\alias{gradfps_prox2}
 \alias{gradfps_prox_benchmark}
 \alias{gradfps_subgrad}
+\alias{gradfps_subgrad_benchmark}
 \title{The GradFPS algorithm for sparse principal component analysis}
 \usage{
 gradfps_prox(
-  S,
-  d,
-  lambda,
-  x0 = NULL,
-  lr = 0.001,
-  maxiter = 100L,
-  control = list()
-)
-
-gradfps_prox2(
   S,
   d,
   lambda,
@@ -40,6 +30,17 @@ gradfps_prox_benchmark(
 
 gradfps_subgrad(
   S,
+  d,
+  lambda,
+  x0 = NULL,
+  lr = 0.001,
+  maxiter = 100L,
+  control = list()
+)
+
+gradfps_subgrad_benchmark(
+  S,
+  Pi,
   d,
   lambda,
   x0 = NULL,
