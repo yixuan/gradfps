@@ -2,7 +2,7 @@ Package: gradfps
 Type: Package
 Title: Gradient-based Fantope Projection and Selection
 Version: 0.1.0
-Author: Yixuan Qiu, Jing Lei, and Kathryn Roeder
+Author: Yixuan Qiu, Jing Lei, Kathryn Roeder, and authors of the PRIMME library
 Maintainer: Yixuan Qiu <yixuanq@gmail.com>
 Description: Fast implementation of the Fantope projection and selection
     algorithm for sparse principal component analysis.
