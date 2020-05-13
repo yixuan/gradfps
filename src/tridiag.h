@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <vector>
 
 #ifdef EIGEN_USE_BLAS
 #define F77_CALL(x)	x ## _
@@ -101,60 +102,62 @@ private:
     ShiftSolver m_solver;
 
     // Working spaces
-    double* m_dcache;
-    double* m_lcache;
-    double* m_ucache;
-    double* m_u2cache;
-    int* m_icache;
+    std::vector<double> m_dcache;
+    std::vector<double> m_lcache;
+    std::vector<double> m_ucache;
+    std::vector<double> m_u2cache;
+    std::vector<int> m_icache;
 
 public:
     SymTridiag(int n, const double* diag, const double* subdiag) :
         m_n(n), m_diag(diag), m_subdiag(subdiag),
         m_mode(OpMode::Prod), m_solver(ShiftSolver::Fast)
     {
-        m_dcache = new double[n];
-        m_lcache = new double[n - 1];
-        m_ucache = new double[n - 1];
-        m_u2cache = new double[n - 2];
-        m_icache = new int[n];
-    }
-
-    ~SymTridiag()
-    {
-        delete[] m_dcache;
-        delete[] m_lcache;
-        delete[] m_ucache;
-        delete[] m_u2cache;
-        delete[] m_icache;
+        // By default we don't allocate memory for caches at this moment,
+        // since they are only needed when factorize() is called
     }
 
     inline int rows() const { return m_n; }
     inline int cols() const { return m_n; }
-    inline void set_mode(OpMode mode) { m_mode = mode; }
+    inline void set_mode(OpMode mode) noexcept { m_mode = mode; }
 
-    inline bool factorize(double shift)
+    inline bool factorize(double shift) noexcept
     {
         // First use the fast solver
         // If not stable (divided-by-zero), use the LAPACK function
-        bool success = tridiag_fac(m_n, m_diag, m_subdiag, shift, m_lcache, m_dcache);
+        //
+        // Here we need to allocate space for l and d caches
+        m_dcache.reserve(m_n);
+        m_lcache.reserve(m_n - 1);
+        bool success = tridiag_fac(m_n, m_diag, m_subdiag, shift,
+                                   &m_lcache[0], &m_dcache[0]);
         if(success)
         {
             m_solver = ShiftSolver::Fast;
             return true;
         }
 
+        // If not successful, use LU decomposition
+        //
+        // Allocate memory for caches
+        m_ucache.reserve(m_n - 1);
+        m_u2cache.reserve(m_n - 2);
+        m_icache.reserve(m_n);
         // Make copies of coefficients
-        std::transform(m_diag, m_diag + m_n, m_dcache, [shift](double x){ return shift - x; });
-        std::transform(m_subdiag, m_subdiag + m_n - 1, m_lcache, std::negate<double>());
-        std::copy(m_lcache, m_lcache + m_n - 1, m_ucache);
+        std::transform(m_diag, m_diag + m_n, m_dcache.begin(),
+                       [shift](double x){ return shift - x; });
+        std::transform(m_subdiag, m_subdiag + m_n - 1, m_lcache.begin(),
+                       std::negate<double>());
+        std::copy(m_lcache.begin(), m_lcache.end(), m_ucache.begin());
 
         int info;
-        F77_CALL(dgttrf)(&m_n, m_lcache, m_dcache, m_ucache, m_u2cache, m_icache, &info);
+        F77_CALL(dgttrf)(&m_n, &m_lcache[0], &m_dcache[0], &m_ucache[0],
+                         &m_u2cache[0], &m_icache[0], &info);
         m_solver = ShiftSolver::Lapack;
         return info == 0;
     }
 
-    inline void perform_op(const double* x_in, double* y_out) const
+    inline void perform_op(const double* x_in, double* y_out) const noexcept
     {
         // Computing product
         if(m_mode == OpMode::Prod)
@@ -166,7 +169,7 @@ public:
         // Fast shift solver
         if(m_solver == ShiftSolver::Fast)
         {
-            tridiag_solve(m_n, m_subdiag, m_lcache, m_dcache, x_in, y_out);
+            tridiag_solve(m_n, m_subdiag, &m_lcache[0], &m_dcache[0], x_in, y_out);
             // Negate y
             std::transform(y_out, y_out + m_n, y_out, std::negate<double>());
             return;
@@ -178,11 +181,11 @@ public:
         int info;
         std::copy(x_in, x_in + m_n, y_out);
         F77_CALL(dgttrs)(&trans, &m_n, &nrhs,
-                         const_cast<double*>(m_lcache),
-                         const_cast<double*>(m_dcache),
-                         const_cast<double*>(m_ucache),
-                         const_cast<double*>(m_u2cache),
-                         const_cast<int*>(m_icache),
+                         const_cast<double*>(&m_lcache[0]),
+                         const_cast<double*>(&m_dcache[0]),
+                         const_cast<double*>(&m_ucache[0]),
+                         const_cast<double*>(&m_u2cache[0]),
+                         const_cast<int*>(&m_icache[0]),
                          y_out, &m_n, &info);
     }
 };

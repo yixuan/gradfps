@@ -61,7 +61,7 @@ private:
     // Q = H1 * H2 * ... * Hn-2
     // Hi = I - tau * ui * ui'
     // ui = (0, ..., 0, 1, vi)
-    inline void apply_Qx(double* xptr) const
+    inline void apply_Qx(double* xptr) const noexcept
     {
         int vlen = 1;
         for(int i = m_n - 3; i >= 0; i--, vlen++)
@@ -116,7 +116,7 @@ public:
 
         lwork = int(blocksize);
         std::vector<double> work;
-        work.resize(lwork);
+        work.reserve(lwork);
 
         F77_CALL(dsytrd)(&uplo, &m_n,
                  m_Q.data(), &m_n,
@@ -202,7 +202,7 @@ public:
         return eigs.num_operations();
     }
 
-    inline void compute_eigenvectors(int num_lg, int num_sm)
+    inline void compute_eigenvectors(int num_lg, int num_sm) noexcept
     {
         #pragma omp parallel for shared(m_evecs_lg)
         for(int i = 0; i < num_lg; i++)
