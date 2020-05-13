@@ -69,7 +69,7 @@ inline void prox_eigs_delta_impl(
 )
 {
     // Compute initial eigenvalues
-    IncrementalEig inceig;
+    IncrementalEig inceig(A.rows());
     inceig.init(A, init_neval_lg + inc_lg * max_try, init_neval_lg,
                    init_neval_sm + inc_sm * max_try, init_neval_sm);
 
