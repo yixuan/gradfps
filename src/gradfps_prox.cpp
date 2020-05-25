@@ -142,7 +142,7 @@ public:
         x.noalias() = 0.5 * (m_z1 + m_z2);
         Spectra::DenseSymMatProd<double> op(x);
         Spectra::SymEigsSolver< double, Spectra::LARGEST_ALGE, Spectra::DenseSymMatProd<double> >
-            eigs(&op, m_d, 3 * m_d);
+            eigs(&op, m_d, std::max(10, 3 * m_d));
         eigs.init();
         eigs.compute();
 
@@ -162,7 +162,7 @@ public:
         {
             Spectra::DenseSymMatProd<double> op(x);
             Spectra::SymEigsSolver< double, Spectra::LARGEST_ALGE, Spectra::DenseSymMatProd<double> >
-                eigs(&op, m_d, 3 * m_d);
+                eigs(&op, m_d, std::max(10, 3 * m_d));
             eigs.init();
             eigs.compute();
             m_evecs.noalias() = eigs.eigenvectors();
