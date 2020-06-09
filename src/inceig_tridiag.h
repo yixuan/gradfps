@@ -3,9 +3,9 @@
 
 #include "common.h"
 #include "tridiag.h"
+#include "walltime.h"
 #include <Spectra/SymEigsSolver.h>
 #include <Spectra/MatOp/DenseSymMatProd.h>
-#include "walltime.h"
 
 #ifdef EIGEN_USE_BLAS
 #define F77_CALL(x)	x ## _
@@ -19,6 +19,7 @@ F77_NAME(dsytrd)(const char* uplo, const int* n,
                  double* d, double* e, double* tau,
                  double* work, const int* lwork, int* info);
 
+}
 #else
 #include <R_ext/Lapack.h>
 #endif
