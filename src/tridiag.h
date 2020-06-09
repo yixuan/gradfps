@@ -107,11 +107,11 @@ private:
     ShiftSolver m_solver;
 
     // Working spaces
-    std::vector<double> m_dcache;
-    std::vector<double> m_lcache;
-    std::vector<double> m_ucache;
-    std::vector<double> m_u2cache;
-    std::vector<int> m_icache;
+    mutable std::vector<double> m_dcache;
+    mutable std::vector<double> m_lcache;
+    mutable std::vector<double> m_ucache;
+    mutable std::vector<double> m_u2cache;
+    mutable std::vector<int> m_icache;
 
 public:
     SymTridiag(int n, const double* diag, const double* subdiag) :
@@ -186,12 +186,8 @@ public:
         int info;
         std::copy(x_in, x_in + m_n, y_out);
         F77_CALL(dgttrs)(&trans, &m_n, &nrhs,
-                         const_cast<double*>(&m_lcache[0]),
-                         const_cast<double*>(&m_dcache[0]),
-                         const_cast<double*>(&m_ucache[0]),
-                         const_cast<double*>(&m_u2cache[0]),
-                         const_cast<int*>(&m_icache[0]),
-                         y_out, &m_n, &info);
+                         &m_lcache[0], &m_dcache[0], &m_ucache[0], &m_u2cache[0],
+                         &m_icache[0], y_out, &m_n, &info);
     }
 };
 
