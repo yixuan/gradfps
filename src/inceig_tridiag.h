@@ -7,10 +7,18 @@
 #include <Spectra/SymEigsSolver.h>
 #include <Spectra/MatOp/DenseSymMatProd.h>
 
-#ifdef EIGEN_USE_BLAS
+#ifndef F77_CALL
 #define F77_CALL(x)	x ## _
+#endif
+
+#ifndef F77_NAME
 #define F77_NAME(x) F77_CALL(x)
+#endif
+
+#ifndef La_extern
 #define La_extern extern
+#endif
+
 extern "C" {
 
 La_extern void
@@ -20,9 +28,6 @@ F77_NAME(dsytrd)(const char* uplo, const int* n,
                  double* work, const int* lwork, int* info);
 
 }
-#else
-#include <R_ext/Lapack.h>
-#endif
 
 
 class IncrementalEig

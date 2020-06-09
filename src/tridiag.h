@@ -5,10 +5,18 @@
 #include <cstdlib>
 #include <vector>
 
-#ifdef EIGEN_USE_BLAS
+#ifndef F77_CALL
 #define F77_CALL(x)	x ## _
+#endif
+
+#ifndef F77_NAME
 #define F77_NAME(x) F77_CALL(x)
+#endif
+
+#ifndef La_extern
 #define La_extern extern
+#endif
+
 extern "C" {
 
 La_extern void
@@ -18,12 +26,9 @@ F77_NAME(dgttrf)(const int* n, double* dl, double* d,
 La_extern void
 F77_NAME(dgttrs)(const char* trans, const int* n, const int* nrhs,
                  double* dl, double* d, double* du, double* du2,
-                 int* ipiv, double* b, const int* ldb, int* info FCLEN);
+                 int* ipiv, double* b, const int* ldb, int* info);
 
 }
-#else
-#include <R_ext/Lapack.h>
-#endif
 
 // y = A * x
 // Diagonal:    b[0], ..., b[n-1]
