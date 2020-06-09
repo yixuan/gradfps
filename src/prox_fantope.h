@@ -20,20 +20,20 @@ inline double prox_fantope_vec_quadprog(const double* lambda, int p, double l1, 
 {
     int n = p + 3;
     // Inverse of the D matrix by setting ierr = 1 in input
-    MatrixXd Dmat = MatrixXd::Identity(n, n);
+    Matrix Dmat = Matrix::Identity(n, n);
     Dmat(p, p) = 1e6;
     Dmat(p + 1, p + 1) = 1e6;
     Dmat(p + 2, p + 2) = 1e6;
 
-    VectorXd dvec(n);
+    Vector dvec(n);
     std::copy(lambda, lambda + p, dvec.data());
     dvec[p] = 0.0;
     dvec[p + 1] = -l1;
     dvec[p + 2] = -l2;
 
     int m = 2 * p + 4;
-    MatrixXd Amat = MatrixXd::Zero(n, m);
-    VectorXd bvec = VectorXd::Zero(m);
+    Matrix Amat = Matrix::Zero(n, m);
+    Vector bvec = Vector::Zero(m);
     // 0 <= xi <= v1
     for(int j = 0; j < p; j++)
     {
@@ -61,7 +61,7 @@ inline double prox_fantope_vec_quadprog(const double* lambda, int p, double l1, 
 
     int meq = 0;
 
-    VectorXd y(n), lagr(m), work(2 * n + (n * (n + 5)) / 2 + 2 * m + 1);
+    Vector y(n), lagr(m), work(2 * n + (n * (n + 5)) / 2 + 2 * m + 1);
     Eigen::VectorXi iact(m);
     double crval;
     int nact;
@@ -305,14 +305,14 @@ inline int prox_fantope_impl(
     double eps = 1e-3, int verbose = 0
 )
 {
-    VectorXd theta(inc * maxiter + d + 1);
+    Vector theta(inc * maxiter + d + 1);
     IncrementalEig inceig(A.rows());
 
     double t1 = get_wall_time();
     inceig.init(A, inc * maxiter + d + 1, d + 1, 0, 0);
     double t2 = get_wall_time();
 
-    const VectorXd& evals = inceig.largest_eigenvalues();
+    const Vector& evals = inceig.largest_eigenvalues();
     double f = prox_fantope_vec(evals.data(), inceig.num_computed_largest(),
                                 l1, l2, d, theta.data());
     double theta_last = theta[inceig.num_computed_largest() - 1];
@@ -336,7 +336,7 @@ inline int prox_fantope_impl(
 
         double t1 = get_wall_time();
         int nops = inceig.compute_next_largest(inc);
-        const VectorXd& evals = inceig.largest_eigenvalues();
+        const Vector& evals = inceig.largest_eigenvalues();
         double t2 = get_wall_time();
 
         double newf = prox_fantope_vec(evals.data(), inceig.num_computed_largest(),
@@ -410,14 +410,14 @@ inline int prox_fantope_impl(
 inline int prox_fantope_hard_impl(RefConstMat A, int d, int inc, int maxiter, RefMat res, double& dsum,
                                   double eps = 1e-3, int verbose = 0)
 {
-    VectorXd theta(inc * maxiter + d + 1);
+    Vector theta(inc * maxiter + d + 1);
     IncrementalEig inceig(A.rows());
 
     double t1 = get_wall_time();
     inceig.init(A, inc * maxiter + d + 1, d + 1, 0, 0);
     double t2 = get_wall_time();
 
-    const VectorXd& evals = inceig.largest_eigenvalues();
+    const Vector& evals = inceig.largest_eigenvalues();
     double c;
     double f = proj_cube_simplex(evals.data(), inceig.num_computed_largest(), d, c, theta.data());
     double theta_last = theta[inceig.num_computed_largest() - 1];
@@ -441,7 +441,7 @@ inline int prox_fantope_hard_impl(RefConstMat A, int d, int inc, int maxiter, Re
 
         double t1 = get_wall_time();
         int nops = inceig.compute_next_largest(inc);
-        const VectorXd& evals = inceig.largest_eigenvalues();
+        const Vector& evals = inceig.largest_eigenvalues();
         double t2 = get_wall_time();
 
         double newf = proj_cube_simplex(evals.data(), inceig.num_computed_largest(), d, c, theta.data());

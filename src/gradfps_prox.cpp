@@ -12,16 +12,16 @@ using Rcpp::List;
 
 // For two orthogonal matrices U and V, U'U = V'V = I_d,
 // ||UU' - VV'||^2 = 2 * d - 2 * ||U'V||^2
-inline double projection_diff(const MatrixXd& u, const MatrixXd& v)
+inline double projection_diff(const Matrix& u, const Matrix& v)
 {
     const int d = u.cols();
-    MatrixXd uv(d, d);
+    Matrix uv(d, d);
     uv.noalias() = u.transpose() * v;
     return 2.0 * d - 2.0 * uv.squaredNorm();
 }
 
 // res = soft_threshold(x, penalty)
-inline void soft_threshold(const MatrixXd& x, double penalty, MatrixXd& res)
+inline void soft_threshold(const Matrix& x, double penalty, Matrix& res)
 {
     const int len = x.size();
     const double* xp = x.data();
@@ -45,11 +45,11 @@ private:
     const int   m_d;      // Number of eigenvectors to estimate
     RefConstMat m_S;      // Sample covariance matrix
 
-    MatrixXd    m_z1;     // Auxiliary variable
-    MatrixXd    m_z2;     // Auxiliary variable
-    MatrixXd    m_work;   // Work space
-    MatrixXd    m_evecs;  // Eigenvectors
-    MatrixXd    m_ework;  // Work space for computing eigenvectors
+    Matrix      m_z1;     // Auxiliary variable
+    Matrix      m_z2;     // Auxiliary variable
+    Matrix      m_work;   // Work space
+    Matrix      m_evecs;  // Eigenvectors
+    Matrix      m_ework;  // Work space for computing eigenvectors
 
     int m_fan_inc;        // Parameter for computing the Fantope proximal operator
     int m_fan_maxinc;     // Parameter for computing the Fantope proximal operator
@@ -141,7 +141,7 @@ public:
     // m_ework needs to be initialized by init(compute_diff_evec = true)
     inline double update_evecs()
     {
-        MatrixXd& x = m_work;
+        Matrix& x = m_work;
         x.noalias() = 0.5 * (m_z1 + m_z2);
         Spectra::DenseSymMatProd<double> op(x);
         Spectra::SymEigsSolver< double, Spectra::LARGEST_ALGE, Spectra::DenseSymMatProd<double> >
@@ -156,9 +156,9 @@ public:
     }
 
     // On convergence, x = soft_threshold(z1, lr * lambda)
-    const MatrixXd& get_saprse_x(double lr, double lambda, bool update_ev = true)
+    const Matrix& get_saprse_x(double lr, double lambda, bool update_ev = true)
     {
-        MatrixXd& x = m_work;
+        Matrix& x = m_work;
         soft_threshold(m_z1, lr * lambda, x);
 
         if(update_ev)
@@ -174,9 +174,9 @@ public:
         return x;
     }
 
-    const MatrixXd& get_z1() { return m_z1; }
-    const MatrixXd& get_z2() { return m_z2; }
-    const MatrixXd& get_evecs() { return m_evecs; }
+    const Matrix& get_z1() { return m_z1; }
+    const Matrix& get_z2() { return m_z2; }
+    const Matrix& get_evecs() { return m_evecs; }
 };
 
 
@@ -234,7 +234,7 @@ List gradfps_prox_(MapMat S, MapMat x0, int d, double lambda,
         }
     }
 
-    const MatrixXd& x = opt.get_saprse_x(lr, lambda);
+    const Matrix& x = opt.get_saprse_x(lr, lambda);
 
     return List::create(
         Rcpp::Named("projection") = x,
@@ -282,8 +282,8 @@ List gradfps_prox_benchmark_(MapMat S, MapMat Pi, MapMat x0, int d, double lambd
 
         opt.update_z1(lr, l1, l2, 0.001 / std::sqrt(i + 1.0), verbose);
         opt.update_z2(lr, lambda, verbose);
-        const MatrixXd& x = opt.get_saprse_x(lr, lambda);
-        const MatrixXd& evecs = opt.get_evecs();
+        const Matrix& x = opt.get_saprse_x(lr, lambda);
+        const Matrix& evecs = opt.get_evecs();
 
         t2 = get_wall_time();
         times.push_back(t2 - t1);
@@ -359,9 +359,9 @@ List gradfps_prox2_(
     if(n != p)
         Rcpp::stop("S must be square");
 
-    MatrixXd z1 = x0, z3 = x0, x = x0, newz3(p, p);
+    Matrix z1 = x0, z3 = x0, x = x0, newz3(p, p);
     double z2_tr = x0.trace();
-    MatrixXd evecs(p, d), newevecs(p, d);
+    Matrix evecs(p, d), newevecs(p, d);
 
     // Metrics in each iteration
     std::vector<double> err_v;

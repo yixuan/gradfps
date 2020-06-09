@@ -119,7 +119,7 @@ inline void prox_lp_impl(RefConstVec vv, double p, double alpha, RefVec res,
     const double cp = 2.0 / p - 1.0;
     double c = 0.0;
 
-    VectorXd xp(n);
+    Vector xp(n);
     xp.array() = res.array().abs().pow(p);
     double psum = xp.sum();
     double newc = alpha * std::pow(psum, cp);
@@ -162,7 +162,7 @@ inline void prox_lp_mat_impl(RefConstMat vv, double p, double alpha, RefMat res,
     const double cp = 2.0 / p - 1.0;
     double c = 0.0;
 
-    MatrixXd xpow(n, n);
+    Matrix xpow(n, n);
     double* xp = xpow.data();
     for(int j = 0; j < n; j++)
     {

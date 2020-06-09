@@ -26,14 +26,10 @@ inline bool triple_comparator(const Triple& t1, const Triple& t2)
 class ActiveSet
 {
 private:
-    typedef Eigen::VectorXd Vector;
-    typedef const Eigen::Ref<const Eigen::MatrixXd> ConstRefMat;
-    typedef Eigen::Map<const Eigen::MatrixXd> ConstMapMat;
-
-    const int                        m_p;
-    ConstMapMat                      m_mat;
-    std::vector<Triple>              m_pattern;
-    std::vector< std::vector<int> >  m_act_set;
+    const int                      m_p;
+    MapConstMat                    m_mat;
+    std::vector<Triple>            m_pattern;
+    std::vector<std::vector<int>>  m_act_set;
 
     // Find max absolute value in {x[0], ..., x[p-1]} \ {x[j]}
     inline double max_abs_excluding_j(const double* x, int j) const
@@ -72,7 +68,7 @@ private:
     }
 
 public:
-    ActiveSet(ConstRefMat& x) :
+    ActiveSet(const RefConstMat& x) :
         m_p(x.rows()), m_mat(x.data(), m_p, m_p)
     {
         m_pattern.reserve(m_p);
@@ -172,7 +168,7 @@ public:
     {
         std::vector<int> act = flattened_active_set();
         const int pa = act.size();
-        MatrixXd sub_mat_data(pa, pa);
+        Matrix sub_mat_data(pa, pa);
 
         // We ony write the lower triangular part
         for(int j = 0; j < pa; j++)

@@ -2,6 +2,8 @@
 #include "prox_fantope.h"
 #include "prox_lp.h"
 #include "walltime.h"
+#include <Spectra/SymEigsSolver.h>
+#include <Spectra/MatOp/DenseSymMatProd.h>
 
 using Rcpp::IntegerVector;
 using Rcpp::NumericVector;
@@ -9,7 +11,7 @@ using Rcpp::NumericMatrix;
 using Rcpp::List;
 
 // res += soft_threshold(x, penalty)
-inline void add_soft_threshold(const MatrixXd& x, double penalty, MatrixXd& res)
+inline void add_soft_threshold(const Matrix& x, double penalty, Matrix& res)
 {
     const int n = x.rows();
 
@@ -30,10 +32,10 @@ inline void add_soft_threshold(const MatrixXd& x, double penalty, MatrixXd& res)
 
 // For two orthogonal matrices U and V, U'U = V'V = I_d,
 // ||UU' - VV'||^2 = 2 * d - 2 * ||U'V||^2
-inline double projection_diff(const MatrixXd& u, const MatrixXd& v)
+inline double projection_diff(const Matrix& u, const Matrix& v)
 {
     const int d = u.cols();
-    MatrixXd uv(d, d);
+    Matrix uv(d, d);
     uv.noalias() = u.transpose() * v;
     return 2.0 * d - 2.0 * uv.squaredNorm();
 }
@@ -55,8 +57,8 @@ List gradfps_prox_omd_(MapMat S, MapMat x0, int d, double lambda, double delta,
     // L_r penalty
     const double r = 1.0 + 1.0 / (std::log(double(p)) - 1.0);
 
-    MatrixXd z1 = x0, z2 = x0, z3 = x0, x(p, p), prox_in(p, p), prox_out(p, p);
-    MatrixXd evecs(p, d), newevecs(p, d);
+    Matrix z1 = x0, z2 = x0, z3 = x0, x(p, p), prox_in(p, p), prox_out(p, p);
+    Matrix evecs(p, d), newevecs(p, d);
 
     // Metrics in each iteration
     std::vector<double> err;

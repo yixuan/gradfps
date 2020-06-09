@@ -46,7 +46,7 @@ IntegerVector active_set(MapMat S, int d, double lambda)
     if(n != p)
         Rcpp::stop("S must be square");
 
-    VectorXd lambdas(1);
+    Vector lambdas(1);
     lambdas[0] = lambda;
 
     // Analyze covariance pattern

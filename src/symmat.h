@@ -10,12 +10,6 @@
 class SymMat
 {
 private:
-    typedef Eigen::VectorXd Vector;
-    typedef Eigen::MatrixXd Matrix;
-    typedef Eigen::Map<Vector> MapVec;
-    typedef Eigen::Map<const Vector> MapConstVec;
-    typedef Eigen::Ref<const Matrix> RefConstMat;
-
     int     m_lead_dim;  // leading dimension
     Matrix  m_data;      // storage
     int     m_n;         // actual dimension

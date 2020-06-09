@@ -9,7 +9,7 @@
 #include <primme.h>
 
 // proj = V * V', where V contains the k eigenvectors associated with the largest eigenvalues
-inline MatrixXd eigs_dense_largest_spectra(
+inline Matrix eigs_dense_largest_spectra(
     const SymMat& x, int k, double eps = 1e-3
 )
 {

@@ -125,8 +125,8 @@ List gradfps_subgrad_(
     // the largest N and smallest N eigenvalues
     const int N = 1;
     // Eigenvalues and eigenvectors
-    VectorXd evals(2 * N), evals_delta(2 * N);
-    MatrixXd evecs(p, 2 * N);
+    Vector evals(2 * N), evals_delta(2 * N);
+    Matrix evecs(p, 2 * N);
 
     const double alpha0 = lr;
     double alpha = alpha0;
@@ -262,8 +262,8 @@ List gradfps_subgrad_benchmark_(
     // the largest N and smallest N eigenvalues
     const int N = 1;
     // Eigenvalues and eigenvectors
-    VectorXd evals(2 * N), evals_delta(2 * N);
-    MatrixXd evecs(p, 2 * N);
+    Vector evals(2 * N), evals_delta(2 * N);
+    Matrix evecs(p, 2 * N);
 
     const double alpha0 = lr;
     double alpha = alpha0;
@@ -330,7 +330,7 @@ List gradfps_subgrad_benchmark_(
         times.push_back(time2 - time1);
 
         err_x.push_back(x.distance(Pi));
-        MatrixXd evecs = eigs_dense_largest_spectra(x, d, 1e-6);
+        Matrix evecs = eigs_dense_largest_spectra(x, d, 1e-6);
         err_v.push_back((evecs * evecs.transpose() - Pi).norm());
     }
 

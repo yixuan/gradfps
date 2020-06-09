@@ -28,30 +28,25 @@ F77_NAME(dsytrd)(const char* uplo, const int* n,
 class IncrementalEig
 {
 private:
-    typedef Eigen::Map<VectorXd> MapVec;
-    typedef Eigen::Map<const VectorXd> MapConstVec;
-    typedef Eigen::Map<const MatrixXd> MapConstMat;
-    typedef Eigen::Ref<const MatrixXd> RefConstMat;
+    const int  m_n;               // Dimension of the matrix
+    Matrix     m_Q;               // Tridiagonal decomposition, x = QTQ'
+    Vector     m_tau;             // Scalar factor for Q
+    Vector     m_diag;            // Diagonal elements of T
+    Vector     m_subdiag;         // Sub-diagonal elements of T
+    SymTridiag m_tridiagop;       // Operator for the tridiagonal matrix
 
-    const int  m_n;             // Dimension of the matrix
-    MatrixXd   m_Q;             // Tridiagonal decomposition, x = QTQ'
-    VectorXd   m_tau;           // Scalar factor for Q
-    VectorXd   m_diag;          // Diagonal elements of T
-    VectorXd   m_subdiag;       // Sub-diagonal elements of T
-    SymTridiag m_tridiagop;     // Operator for the tridiagonal matrix
+    Vector     m_evals_lg;        // Largest eigenvalues
+    Matrix     m_evecs_lg;        // Eigenvectors for largest eigenvalues
+    Vector     m_evals_sm;        // Smallest eigenvalues
+    Matrix     m_evecs_sm;        // Eigenvectors for Smallest eigenvalues
 
-    VectorXd m_evals_lg;        // Largest eigenvalues
-    MatrixXd m_evecs_lg;        // Eigenvectors for largest eigenvalues
-    VectorXd m_evals_sm;        // Smallest eigenvalues
-    MatrixXd m_evecs_sm;        // Eigenvectors for Smallest eigenvalues
+    int        m_max_evals_lg;    // Maximum number of largest eigenvalues to be computed
+    int        m_max_evals_sm;    // Maximum number of smallest eigenvalues to be computed
+    int        m_num_computed_lg; // Number of largest eigenvalues computed
+    int        m_num_computed_sm; // Number of smallest eigenvalues computed
 
-    int      m_max_evals_lg;    // Maximum number of largest eigenvalues to be computed
-    int      m_max_evals_sm;    // Maximum number of smallest eigenvalues to be computed
-    int      m_num_computed_lg; // Number of largest eigenvalues computed
-    int      m_num_computed_sm; // Number of smallest eigenvalues computed
-
-    double   m_shift_lg;        // Current shift for the largest eigenvalues
-    double   m_shift_sm;        // Current shift for the smallest eigenvalues
+    double     m_shift_lg;        // Current shift for the largest eigenvalues
+    double     m_shift_sm;        // Current shift for the smallest eigenvalues
 
     // x <- Qx
     //        [  d                  ]
@@ -219,10 +214,10 @@ public:
 
     const int num_computed_largest() const { return m_num_computed_lg; }
     const int num_computed_smallest() const { return m_num_computed_sm; }
-    const VectorXd& largest_eigenvalues() const { return m_evals_lg; }
-    const VectorXd& smallest_eigenvalues() const { return m_evals_sm; }
-    const MatrixXd& largest_eigenvectors() const { return m_evecs_lg; }
-    const MatrixXd& smallest_eigenvectors() const { return m_evecs_sm; }
+    const Vector& largest_eigenvalues() const { return m_evals_lg; }
+    const Vector& smallest_eigenvalues() const { return m_evals_sm; }
+    const Matrix& largest_eigenvectors() const { return m_evecs_lg; }
+    const Matrix& smallest_eigenvectors() const { return m_evecs_sm; }
 };
 
 

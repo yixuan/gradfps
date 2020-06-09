@@ -74,7 +74,7 @@ inline void prox_eigs_delta_impl(
                    init_neval_sm + inc_sm * max_try, init_neval_sm);
 
     // Test stopping criterion for largest eigenvalues
-    const VectorXd& evals_lg = inceig.largest_eigenvalues();
+    const Vector& evals_lg = inceig.largest_eigenvalues();
     int neval_lg = inceig.num_computed_largest();
     double shrink_lg;
     int loc_lg = shrink_max(evals_lg.data(), neval_lg, penalty_lg, shrink_lg);
@@ -85,7 +85,7 @@ inline void prox_eigs_delta_impl(
         for(int i = 0; i < max_try; i++)
         {
             inceig.compute_next_largest(inc_lg);
-            const VectorXd& evals_lg = inceig.largest_eigenvalues();
+            const Vector& evals_lg = inceig.largest_eigenvalues();
             neval_lg = inceig.num_computed_largest();
             loc_lg = shrink_max(evals_lg.data(), neval_lg, penalty_lg, shrink_lg);
             if(loc_lg <= neval_lg - 2)
@@ -94,7 +94,7 @@ inline void prox_eigs_delta_impl(
     }
 
     // Test stopping criterion for smallest eigenvalues
-    const VectorXd& evals_sm = inceig.smallest_eigenvalues();
+    const Vector& evals_sm = inceig.smallest_eigenvalues();
     int neval_sm = inceig.num_computed_smallest();
     double shrink_sm;
     int loc_sm = shrink_min(evals_sm.data(), neval_sm, penalty_sm, shrink_sm);
@@ -105,7 +105,7 @@ inline void prox_eigs_delta_impl(
         for(int i = 0; i < max_try; i++)
         {
             inceig.compute_next_smallest(inc_sm);
-            const VectorXd& evals_sm = inceig.smallest_eigenvalues();
+            const Vector& evals_sm = inceig.smallest_eigenvalues();
             neval_sm = inceig.num_computed_smallest();
             loc_sm = shrink_min(evals_sm.data(), neval_sm, penalty_sm, shrink_sm);
             if(loc_sm <= neval_sm - 2)
@@ -120,9 +120,9 @@ inline void prox_eigs_delta_impl(
     if(loc_lg >= 0)
     {
         // Difference of eigenvalues
-        VectorXd evals_delta = shrink_lg - inceig.largest_eigenvalues().head(loc_lg + 1).array();
+        Vector evals_delta = shrink_lg - inceig.largest_eigenvalues().head(loc_lg + 1).array();
         // Eigenvectors
-        const MatrixXd& evecs = inceig.largest_eigenvectors();
+        const Matrix& evecs = inceig.largest_eigenvectors();
         res.noalias() += evecs.leftCols(loc_lg + 1) * evals_delta.asDiagonal() * evecs.leftCols(loc_lg + 1).transpose();
 
     }
@@ -130,9 +130,9 @@ inline void prox_eigs_delta_impl(
     if(loc_sm >= 0)
     {
         // Difference of eigenvalues
-        VectorXd evals_delta = shrink_sm - inceig.smallest_eigenvalues().head(loc_sm + 1).array();
+        Vector evals_delta = shrink_sm - inceig.smallest_eigenvalues().head(loc_sm + 1).array();
         // Eigenvectors
-        const MatrixXd& evecs = inceig.smallest_eigenvectors();
+        const Matrix& evecs = inceig.smallest_eigenvectors();
         res.noalias() += evecs.leftCols(loc_sm + 1) * evals_delta.asDiagonal() * evecs.leftCols(loc_sm + 1).transpose();
     }
 }
