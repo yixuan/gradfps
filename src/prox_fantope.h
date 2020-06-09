@@ -3,6 +3,8 @@
 
 #include "common.h"
 
+enum class EigMethod { Spectra, Lapack };
+
 // min  -tr(SX) + s1 * max(0, eigmax(X)-1) + s2 * |tr(X)-d| + (0.5/alpha) * ||X - U||_F^2
 // s.t. X is p.s.d.
 //
@@ -15,7 +17,7 @@
 // s.t. X is p.s.d.
 int prox_fantope_impl(
     RefConstMat A, double l1, double l2, int d, int inc, int maxiter, RefMat res,
-    double eps = 1e-3, int verbose = 0
+    double eps = 1e-3, int verbose = 0, EigMethod method = EigMethod::Spectra
 );
 
 // The old implementation, in fact a hard projection

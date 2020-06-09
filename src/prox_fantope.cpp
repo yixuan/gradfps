@@ -1,7 +1,8 @@
 #include "common.h"
 #include "prox_fantope.h"
 #include "quadprog.h"
-#include "inceig_tridiag.h"
+#include "inceig_tridiag_spectra.h"
+#include "inceig_tridiag_lapack.h"
 #include "walltime.h"
 
 // min  0.5 * ||x - lambda||^2 + l1 * max(0, max(x) - 1) + l2 * |sum(x) - d|
@@ -311,13 +312,14 @@ inline double prox_fantope_vec(const double* lambda, int p, double l1, double l2
 // For simplicity we solve
 // min  l1 * max(0, eigmax(X)-1) + l2 * |tr(X)-d| + 0.5 * ||X - A||_F^2
 // s.t. X is p.s.d.
-int prox_fantope_impl(
+template <typename IncrementalEigType>
+int prox_fantope_template(
     RefConstMat A, double l1, double l2, int d, int inc, int maxiter, RefMat res,
     double eps, int verbose
 )
 {
     Vector theta(inc * maxiter + d + 1);
-    IncrementalEig inceig(A.rows());
+    IncrementalEigType inceig(A.rows());
 
     double t1 = get_wall_time();
     inceig.init(A, inc * maxiter + d + 1, d + 1, 0, 0);
@@ -412,6 +414,21 @@ int prox_fantope_impl(
     return pos;
 }
 
+int prox_fantope_impl(
+    RefConstMat A, double l1, double l2, int d, int inc, int maxiter, RefMat res,
+    double eps, int verbose, EigMethod method
+)
+{
+    if(method == EigMethod::Spectra)
+        return prox_fantope_template<IncrementalEigSpectra>(
+            A, l1, l2, d, inc, maxiter, res, eps, verbose
+        );
+
+    return prox_fantope_template<IncrementalEigLapack>(
+        A, l1, l2, d, inc, maxiter, res, eps, verbose
+    );
+}
+
 
 
 // The old implementation, in fact a hard projection
@@ -424,7 +441,7 @@ int prox_fantope_hard_impl(
 )
 {
     Vector theta(inc * maxiter + d + 1);
-    IncrementalEig inceig(A.rows());
+    IncrementalEigLapack inceig(A.rows());
 
     double t1 = get_wall_time();
     inceig.init(A, inc * maxiter + d + 1, d + 1, 0, 0);

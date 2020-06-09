@@ -51,15 +51,16 @@ private:
     Matrix      m_evecs;  // Eigenvectors
     Matrix      m_ework;  // Work space for computing eigenvectors
 
+    EigMethod m_emethod;  // Method to compute eigenvalues
     int m_fan_inc;        // Parameter for computing the Fantope proximal operator
     int m_fan_maxinc;     // Parameter for computing the Fantope proximal operator
     int m_fan_maxiter;    // Parameter for computing the Fantope proximal operator
 
 public:
-    PPGOptimizer(const RefConstMat& S, int d) :
+    PPGOptimizer(const RefConstMat& S, int d, EigMethod eig_method) :
         m_p(S.rows()), m_pp(m_p * m_p), m_d(d), m_S(S),
-        m_z1(m_p, m_p), m_z2(m_p, m_p), m_work(m_p, m_p),
-        m_evecs(m_p, m_d)
+        m_z1(m_p, m_p), m_z2(m_p, m_p), m_work(m_p, m_p), m_evecs(m_p, m_d),
+        m_emethod(eig_method)
     {}
 
     inline void init(const RefConstMat& x0, int fan_maxinc, int fan_maxiter, bool compute_diff_evec = true)
@@ -83,7 +84,7 @@ public:
         // Compute prox_fantope(z2 + alpha * S)
         m_work.noalias() = m_z2 + lr * m_S;
         m_fan_inc = prox_fantope_impl(
-            m_work, lr * l1, lr * l2, m_d, m_fan_inc, m_fan_maxiter, m_work, eps, verbose
+            m_work, lr * l1, lr * l2, m_d, m_fan_inc, m_fan_maxiter, m_work, eps, verbose, m_emethod
         );
 
         // Update z1
@@ -184,7 +185,8 @@ public:
 // [[Rcpp::export]]
 List gradfps_prox_(MapMat S, MapMat x0, int d, double lambda,
                    double lr, double mu, double r1, double r2,
-                   int maxiter = 500, int fan_maxinc = 100, int fan_maxiter = 10,
+                   int maxiter = 500, bool eig_spectra = true,
+                   int fan_maxinc = 100, int fan_maxiter = 10,
                    double eps_abs = 1e-3, double eps_rel = 1e-3,
                    int verbose = 0)
 {
@@ -194,7 +196,7 @@ List gradfps_prox_(MapMat S, MapMat x0, int d, double lambda,
     if(n != p)
         Rcpp::stop("S must be square");
 
-    PPGOptimizer opt(S, d);
+    PPGOptimizer opt(S, d, eig_spectra ? EigMethod::Spectra : EigMethod::Lapack);
     opt.init(x0, fan_maxinc, fan_maxiter, true);
 
     // Metrics in each iteration
@@ -251,7 +253,8 @@ List gradfps_prox_(MapMat S, MapMat x0, int d, double lambda,
 // [[Rcpp::export]]
 List gradfps_prox_benchmark_(MapMat S, MapMat Pi, MapMat x0, int d, double lambda,
                              double lr, double mu, double r1, double r2,
-                             int maxiter = 500, int fan_maxinc = 100, int fan_maxiter = 10,
+                             int maxiter = 500, bool eig_spectra = true,
+                             int fan_maxinc = 100, int fan_maxiter = 10,
                              double eps_abs = 1e-3, double eps_rel = 1e-3,
                              int verbose = 0)
 {
@@ -261,7 +264,7 @@ List gradfps_prox_benchmark_(MapMat S, MapMat Pi, MapMat x0, int d, double lambd
     if(n != p)
         Rcpp::stop("S must be square");
 
-    PPGOptimizer opt(S, d);
+    PPGOptimizer opt(S, d, eig_spectra ? EigMethod::Spectra : EigMethod::Lapack);
     opt.init(x0, fan_maxinc, fan_maxiter, false);
 
     // Metrics in each iteration

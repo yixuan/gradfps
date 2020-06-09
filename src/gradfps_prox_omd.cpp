@@ -44,7 +44,8 @@ inline double projection_diff(const Matrix& u, const Matrix& v)
 // [[Rcpp::export]]
 List gradfps_prox_omd_(MapMat S, MapMat x0, int d, double lambda, double delta,
                        double lr, double mu, double r1, double r2,
-                       int maxiter = 500, int fan_maxinc = 100, int fan_maxiter = 10,
+                       int maxiter = 500, bool eig_spectra = true,
+                       int fan_maxinc = 100, int fan_maxiter = 10,
                        double eps_abs = 1e-3, double eps_rel = 1e-3,
                        int verbose = 0)
 {
@@ -68,6 +69,7 @@ List gradfps_prox_omd_(MapMat S, MapMat x0, int d, double lambda, double delta,
     const double l2 = lr * mu / std::sqrt(double(p));
     const double radius = std::sqrt(double(d));
     double step = lr;
+    EigMethod eig_method = eig_spectra ? EigMethod::Spectra : EigMethod::Lapack;
 
     int i = 0;
     for(i = 0; i < maxiter; i++)
@@ -83,8 +85,10 @@ List gradfps_prox_omd_(MapMat S, MapMat x0, int d, double lambda, double delta,
 
         // z1 <- z1 - x + prox_fantope(2 * x - z1)
         prox_in.noalias() = x + x - z1 + step * S;
-        fan_inc = prox_fantope_impl(prox_in, l1, l2, d, fan_inc, fan_maxiter, prox_out,
-                                    0.01 / std::sqrt(i + 1.0), verbose);
+        fan_inc = prox_fantope_impl(
+            prox_in, l1, l2, d, fan_inc, fan_maxiter, prox_out,
+            0.01 / std::sqrt(i + 1.0), verbose, eig_method
+        );
         z1.noalias() += (prox_out - x);
 
         if(verbose > 1)

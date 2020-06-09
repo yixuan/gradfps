@@ -21,6 +21,9 @@
 ##' \item{\code{mu, r1, r2}}{Penalty parameters.}
 ##' \item{\code{eps_abs}}{Absolute precision parameter. Default is \code{1e-3}.}
 ##' \item{\code{eps_rel}}{Relative precision parameter. Default is \code{1e-3}.}
+##' \item{\code{eig_method}}{Method to compute eigenvalues. Possible values are
+##'                          \code{"spectra"} and \code{"lapack"}. Default is
+##'                          \code{"spectra"}.}
 ##' \item{\code{fan_maxinc}}{Maximum number of incremental eigenvalues to compute
 ##'                          in each iteration of the Fantope proximal operator.
 ##'                          Default is 100.}
@@ -47,14 +50,16 @@ gradfps_prox = function(
         r2      = sqrt(p * (d + 1)),
         eps_abs = 1e-3,
         eps_rel = 1e-3,
+        eig_method = "spectra",
         fan_maxiter = 10,
         fan_maxinc = 100,
         verbose = 0
     )
     opts[names(control)] = control
 
+    eig_spectra = isTRUE(opts$eig_method == "spectra")
     gradfps_prox_(S, x0, d, lambda, lr, opts$mu, opts$r1, opts$r2,
-                  maxiter, opts$fan_maxinc, opts$fan_maxiter,
+                  maxiter, eig_spectra, opts$fan_maxinc, opts$fan_maxiter,
                   opts$eps_abs, opts$eps_rel,
                   opts$verbose)
 
@@ -82,14 +87,16 @@ gradfps_prox_benchmark = function(
         r2      = sqrt(p * (d + 1)),
         eps_abs = 1e-3,
         eps_rel = 1e-3,
+        eig_method = "spectra",
         fan_maxiter = 10,
         fan_maxinc = 100,
         verbose = 0
     )
     opts[names(control)] = control
 
+    eig_spectra = isTRUE(opts$eig_method == "spectra")
     gradfps_prox_benchmark_(S, Pi, x0, d, lambda, lr, opts$mu, opts$r1, opts$r2,
-                            maxiter, opts$fan_maxinc, opts$fan_maxiter,
+                            maxiter, eig_spectra, opts$fan_maxinc, opts$fan_maxiter,
                             opts$eps_abs, opts$eps_rel,
                             opts$verbose)
 }
@@ -180,6 +187,9 @@ gradfps_subgrad_benchmark = function(
 ##' \describe{
 ##' \item{\code{eps_abs}}{Absolute precision parameter. Default is \code{1e-3}.}
 ##' \item{\code{eps_rel}}{Relative precision parameter. Default is \code{1e-3}.}
+##' \item{\code{eig_method}}{Method to compute eigenvalues. Possible values are
+##'                          \code{"spectra"} and \code{"lapack"}. Default is
+##'                          \code{"spectra"}.}
 ##' \item{\code{fan_maxinc}}{Maximum number of incremental eigenvalues to compute
 ##'                          in each iteration of the Fantope proximal operator.
 ##'                          Default is 100.}
@@ -206,14 +216,16 @@ gradfps_prox_omd = function(
         r2      = sqrt(p * (d + 1)),
         eps_abs = 1e-3,
         eps_rel = 1e-3,
+        eig_method = "spectra",
         fan_maxiter = 10,
         fan_maxinc = 100,
         verbose = 0
     )
     opts[names(control)] = control
 
+    eig_spectra = isTRUE(opts$eig_method == "spectra")
     gradfps_prox_omd_(S, x0, d, lambda, delta, lr, opts$mu, opts$r1, opts$r2,
-                      maxiter, opts$fan_maxinc, opts$fan_maxiter,
+                      maxiter, eig_spectra, opts$fan_maxinc, opts$fan_maxiter,
                       opts$eps_abs, opts$eps_rel,
                       opts$verbose)
 }

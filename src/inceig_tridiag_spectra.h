@@ -1,5 +1,5 @@
-#ifndef GRADFPS_INCEIG_TRIDIAG_H
-#define GRADFPS_INCEIG_TRIDIAG_H
+#ifndef GRADFPS_INCEIG_TRIDIAG_SPECTRA_H
+#define GRADFPS_INCEIG_TRIDIAG_SPECTRA_H
 
 #include "common.h"
 #include "tridiag.h"
@@ -30,7 +30,7 @@ F77_NAME(dsytrd)(const char* uplo, const int* n,
 }
 
 
-class IncrementalEig
+class IncrementalEigSpectra
 {
 private:
     const int  m_n;               // Dimension of the matrix
@@ -77,7 +77,7 @@ private:
     }
 
 public:
-    IncrementalEig(int n):
+    IncrementalEigSpectra(int n):
         m_n(n), m_Q(n, n), m_tau(n - 1), m_diag(n), m_subdiag(n - 1),
         m_tridiagop(n, m_diag.data(), m_subdiag.data())
     {}
@@ -226,4 +226,4 @@ public:
 };
 
 
-#endif // GRADFPS_INCEIG_TRIDIAG_H
+#endif // GRADFPS_INCEIG_TRIDIAG_SPECTRA_H
