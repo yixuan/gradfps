@@ -1,69 +1,68 @@
 #ifndef GRADFPS_SPARSE_MAT_H
 #define GRADFPS_SPARSE_MAT_H
 
-#include <xsimd/xsimd.hpp>
 #include "common.h"
 #include "symmat.h"
 
-// Create a SIMD vector v = x[ind[0]], x[ind[1]], x[ind[2]], ...
-template <int simd_size>
-inline xsimd::batch<double, simd_size> gather(const double* x, const int* ind)
+#ifdef __AVX2__
+#include <immintrin.h>
+// Array v = (v1, ..., vn), array x, indices i = (i1, ..., in), constant c, array y
+// (1) Compute r = v[1] * x[i1] + ... + v[n] * x[in]
+// (2) Do y[i1] += v[1] * c, ..., y[in] += v[n] * c
+// (3) On exit the v pointer points to the end of v
+// (4) On exit the i pointer points to the end of i
+inline double gather_and_scatter(
+    const double*& v, const double* x, const int*& ind, double c, double* y, int n
+)
 {
-    alignas(simd_size * sizeof(double)) double data[simd_size];
-    for(int i = 0; i < simd_size; i++)
-        data[i] = x[ind[i]];
-    return xsimd::load_aligned(data);
-}
+    // Process 4 values at one time
+    constexpr int simd_size = 4;
+    const int* ind_simd_end = ind + (n - n % simd_size);
+    const int* ind_end = ind + n;
 
-// Add a SIMD vector v to x[ind[0]], x[ind[1]], x[ind[2]], ...
-template <int simd_size>
-inline void scatter_add(const xsimd::batch<double, simd_size>& v, double* x, const int* ind)
+    __m256d rs = _mm256_set1_pd(0.0);
+    __m256d cs = _mm256_set1_pd(c);
+    for(; ind < ind_simd_end; ind += simd_size, v += simd_size)
+    {
+        // 4 indices in a packet
+        __m128i inds = _mm_loadu_si128((__m128i*) ind);
+        // 4 v values in a packet
+        __m256d vs = _mm256_loadu_pd(v);
+        // 4 x values in a packet
+        __m256d xs = _mm256_i32gather_pd(x, inds, sizeof(double));
+        // Multiply and add
+        rs += vs * xs;
+        // v * c
+        __m256d vcs = vs * cs;
+        // Scattering
+        y[ind[0]] += vcs[0];
+        y[ind[1]] += vcs[1];
+        y[ind[2]] += vcs[2];
+        y[ind[3]] += vcs[3];
+    }
+
+    double r = 0.0;
+    for(; ind < ind_end; ind++, v++)
+    {
+        r += (*v) * x[*ind];
+        y[*ind] += (*v) * c;
+    }
+    return r + rs[0] + rs[1] + rs[2] + rs[3];
+}
+#else
+inline double gather_and_scatter(
+    const double*& v, const double* x, const int*& ind, double c, double* y, int n
+)
 {
-    alignas(simd_size * sizeof(double)) double data[simd_size];
-    v.store_aligned(data);
-    for(int i = 0; i < simd_size; i++)
-        x[ind[i]] += data[i];
+    const int* ind_end = ind + n;
+    double r = 0.0;
+    for(; ind < ind_end; ind++, v++)
+    {
+        r += (*v) * x[*ind];
+        y[*ind] += (*v) * c;
+    }
+    return r;
 }
-
-// Specialization for 256-bit vector
-#ifdef __AVX__
-
-template <>
-inline xsimd::batch<double, 4> gather<4>(const double* x, const int* ind)
-{
-    return xsimd::batch<double, 4>(x[ind[0]], x[ind[1]], x[ind[2]], x[ind[3]]);
-    // For AVX2
-    // xsimd::batch<int, 4> indv;
-    // indv.load_unaligned(ind);
-    // __m256d res = _mm256_i32gather_pd(x, indv, sizeof(double));
-    // return res;
-}
-
-template <>
-inline void scatter_add<4>(const xsimd::batch<double, 4>& v, double* x, const int* ind)
-{
-    x[ind[0]] += v[0];
-    x[ind[1]] += v[1];
-    x[ind[2]] += v[2];
-    x[ind[3]] += v[3];
-}
-
-// Specialization for 128-bit vector
-#elif defined(__SSE__)
-
-template <>
-inline xsimd::batch<double, 2> gather<2>(const double* x, const int* ind)
-{
-    return xsimd::batch<double, 2>(x[ind[0]], x[ind[1]]);
-}
-
-template <>
-inline void scatter_add<2>(const xsimd::batch<double, 2>& v, double* x, const int* ind)
-{
-    x[ind[0]] += v[0];
-    x[ind[1]] += v[1];
-}
-
 #endif
 
 
@@ -177,9 +176,6 @@ public:
         // MapVec      y(y_out, m_n);
         // y.noalias() = to_spmat().selfadjointView<Eigen::Lower>() * x;
 
-        typedef xsimd::batch<double, xsimd::simd_type<double>::size> vec;
-        const int simd_size = xsimd::simd_type<double>::size;
-
         // Zero out y vector
         std::fill(y_out, y_out + m_n, 0.0);
 
@@ -208,25 +204,9 @@ public:
 
             // Off-diagonal elements
             const int len = col_end - elem_ptr;
-            const int vec_size = len - len % simd_size;
-            const double* simd_end = elem_ptr + vec_size;
-            vec x_in_col_simd = xsimd::set_simd(x_in_col);
-            double y_out_col = 0.0;
-            for( ; elem_ptr < simd_end; elem_ptr += simd_size, row_id_ptr += simd_size)
-            {
-                vec elem_simd = xsimd::load_unaligned(elem_ptr);
-                vec prod = elem_simd * x_in_col_simd;
-                scatter_add<simd_size>(prod, y_out, row_id_ptr);
-                vec x_in_row_simd = gather<simd_size>(x_in, row_id_ptr);
-                y_out_col += xsimd::hadd(elem_simd * x_in_row_simd);
-            }
-            for( ; elem_ptr < col_end; elem_ptr++, row_id_ptr++)
-            {
-                // Add value to the y vector
-                y_out[*row_id_ptr] += (*elem_ptr) * x_in_col;
-                // For off-diagonal elements, do a symmetric update
-                y_out_col += (*elem_ptr) * x_in[*row_id_ptr];
-            }
+            double y_out_col = gather_and_scatter(
+                elem_ptr, x_in, row_id_ptr, x_in_col, y_out, len
+            );
             y_out[col_id] += y_out_col;
         }
     }
