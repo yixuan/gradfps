@@ -2,6 +2,8 @@
 #include "prox_fantope.h"
 #include "prox_eigs.h"
 #include "walltime.h"
+#include <Spectra/SymEigsSolver.h>
+#include <Spectra/MatOp/DenseSymMatProd.h>
 
 using Rcpp::IntegerVector;
 using Rcpp::NumericVector;
@@ -64,6 +66,7 @@ public:
     {
         m_z1.noalias() = x0;
         m_z2.noalias() = m_z1;
+        m_evecs.setZero();
 
         m_fan_inc = 2 * m_d;
         m_fan_maxinc = fan_maxinc;
