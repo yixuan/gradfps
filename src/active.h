@@ -17,12 +17,6 @@ public:
     {}
 };
 
-// Comparator for std::sort(), in descending order
-inline bool triple_comparator(const Triple& t1, const Triple& t2)
-{
-    return t1.m_diag > t2.m_diag;
-}
-
 class ActiveSet
 {
 private:
@@ -59,10 +53,9 @@ private:
     {
         std::vector<int> res;
         res.reserve(m_p);
-        const int nlambda = m_act_set.size();
 
-        for(int i = 0; i < nlambda; i++)
-            res.insert(res.end(), m_act_set[i].begin(), m_act_set[i].end());
+        for(const auto& s: m_act_set)
+            res.insert(res.end(), s.begin(), s.end());
 
         return res;
     }
@@ -84,10 +77,16 @@ public:
             // For each column j, find the element x(i, j), i != j
             // that has the largest absolute value
             const double max_off_diag = max_abs_excluding_j(&m_mat.coeffRef(0, j), j);
-            m_pattern.push_back(Triple(j, m_mat.coeff(j, j), max_off_diag));
+            m_pattern.emplace_back(j, m_mat.coeff(j, j), max_off_diag);
         }
 
-        std::sort(m_pattern.begin(), m_pattern.end(), triple_comparator);
+        // Sort m_pattern according to the diagonal elements, in descending order
+        std::sort(
+            m_pattern.begin(), m_pattern.end(),
+            [](const Triple& t1, const Triple& t2) {
+                return t1.m_diag > t2.m_diag;
+            }
+        );
     }
 
     inline const std::vector<Triple>& pattern() const
