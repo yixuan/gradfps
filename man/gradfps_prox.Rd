@@ -80,6 +80,9 @@ following parameters:
 \item{\code{mu, r1, r2}}{Penalty parameters.}
 \item{\code{eps_abs}}{Absolute precision parameter. Default is \code{1e-3}.}
 \item{\code{eps_rel}}{Relative precision parameter. Default is \code{1e-3}.}
+\item{\code{eig_method}}{Method to compute eigenvalues. Possible values are
+                         \code{"spectra"} and \code{"lapack"}. Default is
+                         \code{"spectra"}.}
 \item{\code{fan_maxinc}}{Maximum number of incremental eigenvalues to compute
                          in each iteration of the Fantope proximal operator.
                          Default is 100.}

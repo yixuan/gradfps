@@ -8,8 +8,8 @@
 using namespace Rcpp;
 
 // gradfps_prox_
-List gradfps_prox_(MapMat S, MapMat x0, int d, double lambda, double lr, double mu, double r1, double r2, int maxiter, int fan_maxinc, int fan_maxiter, double eps_abs, double eps_rel, int verbose);
-RcppExport SEXP _gradfps_gradfps_prox_(SEXP SSEXP, SEXP x0SEXP, SEXP dSEXP, SEXP lambdaSEXP, SEXP lrSEXP, SEXP muSEXP, SEXP r1SEXP, SEXP r2SEXP, SEXP maxiterSEXP, SEXP fan_maxincSEXP, SEXP fan_maxiterSEXP, SEXP eps_absSEXP, SEXP eps_relSEXP, SEXP verboseSEXP) {
+List gradfps_prox_(MapMat S, MapMat x0, int d, double lambda, double lr, double mu, double r1, double r2, int maxiter, bool eig_spectra, int fan_maxinc, int fan_maxiter, double eps_abs, double eps_rel, int verbose);
+RcppExport SEXP _gradfps_gradfps_prox_(SEXP SSEXP, SEXP x0SEXP, SEXP dSEXP, SEXP lambdaSEXP, SEXP lrSEXP, SEXP muSEXP, SEXP r1SEXP, SEXP r2SEXP, SEXP maxiterSEXP, SEXP eig_spectraSEXP, SEXP fan_maxincSEXP, SEXP fan_maxiterSEXP, SEXP eps_absSEXP, SEXP eps_relSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -22,18 +22,19 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type r1(r1SEXP);
     Rcpp::traits::input_parameter< double >::type r2(r2SEXP);
     Rcpp::traits::input_parameter< int >::type maxiter(maxiterSEXP);
+    Rcpp::traits::input_parameter< bool >::type eig_spectra(eig_spectraSEXP);
     Rcpp::traits::input_parameter< int >::type fan_maxinc(fan_maxincSEXP);
     Rcpp::traits::input_parameter< int >::type fan_maxiter(fan_maxiterSEXP);
     Rcpp::traits::input_parameter< double >::type eps_abs(eps_absSEXP);
     Rcpp::traits::input_parameter< double >::type eps_rel(eps_relSEXP);
     Rcpp::traits::input_parameter< int >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(gradfps_prox_(S, x0, d, lambda, lr, mu, r1, r2, maxiter, fan_maxinc, fan_maxiter, eps_abs, eps_rel, verbose));
+    rcpp_result_gen = Rcpp::wrap(gradfps_prox_(S, x0, d, lambda, lr, mu, r1, r2, maxiter, eig_spectra, fan_maxinc, fan_maxiter, eps_abs, eps_rel, verbose));
     return rcpp_result_gen;
 END_RCPP
 }
 // gradfps_prox_benchmark_
-List gradfps_prox_benchmark_(MapMat S, MapMat Pi, MapMat x0, int d, double lambda, double lr, double mu, double r1, double r2, int maxiter, int fan_maxinc, int fan_maxiter, double eps_abs, double eps_rel, int verbose);
-RcppExport SEXP _gradfps_gradfps_prox_benchmark_(SEXP SSEXP, SEXP PiSEXP, SEXP x0SEXP, SEXP dSEXP, SEXP lambdaSEXP, SEXP lrSEXP, SEXP muSEXP, SEXP r1SEXP, SEXP r2SEXP, SEXP maxiterSEXP, SEXP fan_maxincSEXP, SEXP fan_maxiterSEXP, SEXP eps_absSEXP, SEXP eps_relSEXP, SEXP verboseSEXP) {
+List gradfps_prox_benchmark_(MapMat S, MapMat Pi, MapMat x0, int d, double lambda, double lr, double mu, double r1, double r2, int maxiter, bool eig_spectra, int fan_maxinc, int fan_maxiter, double eps_abs, double eps_rel, int verbose);
+RcppExport SEXP _gradfps_gradfps_prox_benchmark_(SEXP SSEXP, SEXP PiSEXP, SEXP x0SEXP, SEXP dSEXP, SEXP lambdaSEXP, SEXP lrSEXP, SEXP muSEXP, SEXP r1SEXP, SEXP r2SEXP, SEXP maxiterSEXP, SEXP eig_spectraSEXP, SEXP fan_maxincSEXP, SEXP fan_maxiterSEXP, SEXP eps_absSEXP, SEXP eps_relSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -47,18 +48,19 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type r1(r1SEXP);
     Rcpp::traits::input_parameter< double >::type r2(r2SEXP);
     Rcpp::traits::input_parameter< int >::type maxiter(maxiterSEXP);
+    Rcpp::traits::input_parameter< bool >::type eig_spectra(eig_spectraSEXP);
     Rcpp::traits::input_parameter< int >::type fan_maxinc(fan_maxincSEXP);
     Rcpp::traits::input_parameter< int >::type fan_maxiter(fan_maxiterSEXP);
     Rcpp::traits::input_parameter< double >::type eps_abs(eps_absSEXP);
     Rcpp::traits::input_parameter< double >::type eps_rel(eps_relSEXP);
     Rcpp::traits::input_parameter< int >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(gradfps_prox_benchmark_(S, Pi, x0, d, lambda, lr, mu, r1, r2, maxiter, fan_maxinc, fan_maxiter, eps_abs, eps_rel, verbose));
+    rcpp_result_gen = Rcpp::wrap(gradfps_prox_benchmark_(S, Pi, x0, d, lambda, lr, mu, r1, r2, maxiter, eig_spectra, fan_maxinc, fan_maxiter, eps_abs, eps_rel, verbose));
     return rcpp_result_gen;
 END_RCPP
 }
 // gradfps_prox_omd_
-List gradfps_prox_omd_(MapMat S, MapMat x0, int d, double lambda, double delta, double lr, double mu, double r1, double r2, int maxiter, int fan_maxinc, int fan_maxiter, double eps_abs, double eps_rel, int verbose);
-RcppExport SEXP _gradfps_gradfps_prox_omd_(SEXP SSEXP, SEXP x0SEXP, SEXP dSEXP, SEXP lambdaSEXP, SEXP deltaSEXP, SEXP lrSEXP, SEXP muSEXP, SEXP r1SEXP, SEXP r2SEXP, SEXP maxiterSEXP, SEXP fan_maxincSEXP, SEXP fan_maxiterSEXP, SEXP eps_absSEXP, SEXP eps_relSEXP, SEXP verboseSEXP) {
+List gradfps_prox_omd_(MapMat S, MapMat x0, int d, double lambda, double delta, double lr, double mu, double r1, double r2, int maxiter, bool eig_spectra, int fan_maxinc, int fan_maxiter, double eps_abs, double eps_rel, int verbose);
+RcppExport SEXP _gradfps_gradfps_prox_omd_(SEXP SSEXP, SEXP x0SEXP, SEXP dSEXP, SEXP lambdaSEXP, SEXP deltaSEXP, SEXP lrSEXP, SEXP muSEXP, SEXP r1SEXP, SEXP r2SEXP, SEXP maxiterSEXP, SEXP eig_spectraSEXP, SEXP fan_maxincSEXP, SEXP fan_maxiterSEXP, SEXP eps_absSEXP, SEXP eps_relSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -72,12 +74,13 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type r1(r1SEXP);
     Rcpp::traits::input_parameter< double >::type r2(r2SEXP);
     Rcpp::traits::input_parameter< int >::type maxiter(maxiterSEXP);
+    Rcpp::traits::input_parameter< bool >::type eig_spectra(eig_spectraSEXP);
     Rcpp::traits::input_parameter< int >::type fan_maxinc(fan_maxincSEXP);
     Rcpp::traits::input_parameter< int >::type fan_maxiter(fan_maxiterSEXP);
     Rcpp::traits::input_parameter< double >::type eps_abs(eps_absSEXP);
     Rcpp::traits::input_parameter< double >::type eps_rel(eps_relSEXP);
     Rcpp::traits::input_parameter< int >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(gradfps_prox_omd_(S, x0, d, lambda, delta, lr, mu, r1, r2, maxiter, fan_maxinc, fan_maxiter, eps_abs, eps_rel, verbose));
+    rcpp_result_gen = Rcpp::wrap(gradfps_prox_omd_(S, x0, d, lambda, delta, lr, mu, r1, r2, maxiter, eig_spectra, fan_maxinc, fan_maxiter, eps_abs, eps_rel, verbose));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -205,9 +208,9 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_gradfps_gradfps_prox_", (DL_FUNC) &_gradfps_gradfps_prox_, 14},
-    {"_gradfps_gradfps_prox_benchmark_", (DL_FUNC) &_gradfps_gradfps_prox_benchmark_, 15},
-    {"_gradfps_gradfps_prox_omd_", (DL_FUNC) &_gradfps_gradfps_prox_omd_, 15},
+    {"_gradfps_gradfps_prox_", (DL_FUNC) &_gradfps_gradfps_prox_, 15},
+    {"_gradfps_gradfps_prox_benchmark_", (DL_FUNC) &_gradfps_gradfps_prox_benchmark_, 16},
+    {"_gradfps_gradfps_prox_omd_", (DL_FUNC) &_gradfps_gradfps_prox_omd_, 16},
     {"_gradfps_gradfps_subgrad_", (DL_FUNC) &_gradfps_gradfps_subgrad_, 12},
     {"_gradfps_gradfps_subgrad_benchmark_", (DL_FUNC) &_gradfps_gradfps_subgrad_benchmark_, 13},
     {"_gradfps_prox_fantope", (DL_FUNC) &_gradfps_prox_fantope, 8},
