@@ -1,6 +1,6 @@
 #include "common.h"
 #include "prox_fantope.h"
-#include "prox_eigs.h"
+// #include "prox_eigs.h"
 #include "walltime.h"
 #include <Spectra/SymEigsSolver.h>
 #include <Spectra/MatOp/DenseSymMatProd.h>
