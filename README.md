@@ -141,7 +141,9 @@ ggplot(gdat, aes(x = time, y = err)) +
 
 ### Citation
 
-Please consider to cite our work if you have used our algorithm or package in your research.
+Please consider to cite our work if you have used our algorithm or
+package in your research. The code to reproduce the experiments in
+the article can be found in the `inst/article` directory.
 
 ```
 @article{qiu2022gradient,
