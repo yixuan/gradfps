@@ -66,10 +66,10 @@ sigmas = c(12, 6, runif(p - 2, 0, 2))
 Sigma = ev %*% diag(sigmas) %*% t(ev)
 
 # Visualization of the true covariance matrix
-view_matrix(Sigma[1:200, 1:200], legend_title = "True\nCovariance\nMatrix")
+view_matrix(Sigma[1:100, 1:100], legend_title = "True\nCovariance\nMatrix")
 ```
 
-<img src="https://i.imgur.com/gOJtP9W.png" alt="True covariance matrix" width="700px" />
+<img src="https://i.imgur.com/jpvb5dp.png" alt="True covariance matrix" width="350px" />
 
 ```r
 # Eigenvectors
@@ -81,7 +81,7 @@ Pi = tcrossprod(V[, 1:2])
 view_evec(-V[1:200, ], asp = 0.4, bar_height = 8)
 ```
 
-<img src="https://i.imgur.com/u06V93W.png" alt="True eigenvectors" width="800px" />
+<img src="https://i.imgur.com/EqON45E.png" alt="True eigenvectors" width="600px" />
 
 ```r
 # Generate data
@@ -100,10 +100,10 @@ res_fps = fps::fps_benchmark(
     Smat, d, lambda, x0, Pi, rho = -1, maxiter = 60, tolerance = 1e-3, verbose = 0
 )
 # Verify the result
-view_matrix(res_fps$projection[1:200, 1:200], legend_title = "ADMM-FPS\nProjection\nMatrix")
+view_matrix(res_fps$projection[1:100, 1:100], legend_title = "ADMM-FPS\nProjection\nMatrix")
 ```
 
-<img src="https://i.imgur.com/FXdgoal.png" alt="ADMM-FPS projection matrix" width="700px" />
+<img src="https://i.imgur.com/Ob2XHyj.png" alt="ADMM-FPS projection matrix" width="350px" />
 
 ```r
 # Gradient FPS
@@ -112,10 +112,10 @@ res_grad = gradfps_prox_benchmark(
     control = list(fan_maxinc = 10, verbose = 0)
 )
 # Verify the result
-view_matrix(res_grad$projection[1:200, 1:200], legend_title = "GradFPS\nProjection\nMatrix")
+view_matrix(res_grad$projection[1:100, 1:100], legend_title = "GradFPS\nProjection\nMatrix")
 ```
 
-<img src="https://i.imgur.com/l1r3Ebt.png" alt="GradFPS projection matrix" width="700px" />
+<img src="https://i.imgur.com/F1XSDnH.png" alt="GradFPS projection matrix" width="350px" />
 
 ```r
 # Compare computational efficiency
@@ -137,7 +137,7 @@ ggplot(gdat, aes(x = time, y = err)) +
     theme(plot.title = element_text(hjust = 0.5))
 ```
 
-<img src="https://i.imgur.com/SCQYopF.png" alt="Time comparison" width="800px" />
+<img src="https://i.imgur.com/SCQYopF.png" alt="Time comparison" width="500px" />
 
 ### Citation
 
