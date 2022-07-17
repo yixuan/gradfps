@@ -144,10 +144,13 @@ ggplot(gdat, aes(x = time, y = err)) +
 Please consider to cite our work if you have used our algorithm or package in your research.
 
 ```
-@article{qiu2019gradient,
+@article{qiu2022gradient,
     title={Gradient-based Sparse Principal Component Analysis with Extensions to Online Learning},
     author={Qiu, Yixuan and Lei, Jing and Roeder, Kathryn},
-    journal={arXiv preprint arXiv:1911.08048},
-    year={2019}
+    journal={Biometrika},
+    year={2022},
+    month={07},
+    issn = {1464-3510},
+    doi = {10.1093/biomet/asac041}
 }
 ```
