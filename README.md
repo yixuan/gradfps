@@ -9,7 +9,7 @@ by Yixuan Qiu, Jing Lei, and Kathryn Roeder.
 ### Installation
 
 Currently `gradfps` has not been submitted to CRAN, but it can be installed just like
-any other R package hosted on GibHub. For `devtools` users, the following command
+any other R packages hosted on GitHub. For `devtools` users, the following command
 should work on most platforms:
 
 ```r
