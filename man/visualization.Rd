@@ -12,7 +12,8 @@ view_matrix(
   legend_title = "Coefficient",
   bar_height = 10,
   font_size = 20,
-  padding = 0
+  padding = 0,
+  pal = NULL
 )
 
 view_evec(
@@ -22,7 +23,8 @@ view_evec(
   legend_title = "Factor\\nLoading",
   asp = 0.2,
   bar_height = 6,
-  font_size = 20
+  font_size = 20,
+  pal = NULL
 )
 }
 \arguments{
@@ -32,13 +34,15 @@ view_evec(
 
 \item{ylab}{Y-axis label.}
 
-\item{legend_title}{Title of the colorbar legend.}
+\item{legend_title}{Title of the color bar legend.}
 
-\item{bar_height}{Height of the colorbar.}
+\item{bar_height}{Height of the color bar.}
 
 \item{font_size}{Base font size for the plot.}
 
 \item{padding}{The padding between the axis border and the plot area.}
+
+\item{pal}{A character vector to specify the the palette of the color bar.}
 
 \item{asp}{Aspect ratio of the plot.}
 }

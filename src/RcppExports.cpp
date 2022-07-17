@@ -7,6 +7,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // gradfps_prox_
 List gradfps_prox_(MapMat S, MapMat x0, int d, double lambda, double lr, double mu, double r1, double r2, int maxiter, bool eig_spectra, int fan_maxinc, int fan_maxiter, double eps_abs, double eps_rel, int verbose);
 RcppExport SEXP _gradfps_gradfps_prox_(SEXP SSEXP, SEXP x0SEXP, SEXP dSEXP, SEXP lambdaSEXP, SEXP lrSEXP, SEXP muSEXP, SEXP r1SEXP, SEXP r2SEXP, SEXP maxiterSEXP, SEXP eig_spectraSEXP, SEXP fan_maxincSEXP, SEXP fan_maxiterSEXP, SEXP eps_absSEXP, SEXP eps_relSEXP, SEXP verboseSEXP) {
