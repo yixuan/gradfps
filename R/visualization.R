@@ -6,11 +6,12 @@
 ##' @param mat,evec     The matrix to be visualized.
 ##' @param xlab         X-axis label.
 ##' @param ylab         Y-axis label.
-##' @param legend_title Title of the colorbar legend.
+##' @param legend_title Title of the color bar legend.
 ##' @param asp          Aspect ratio of the plot.
-##' @param bar_height   Height of the colorbar.
+##' @param bar_height   Height of the color bar.
 ##' @param font_size    Base font size for the plot.
 ##' @param padding      The padding between the axis border and the plot area.
+##' @param pal          A character vector to specify the the palette of the color bar.
 ##'
 ##' @rdname visualization
 ##' @author Yixuan Qiu \url{https://statr.me}
@@ -32,7 +33,7 @@
 
 # Visualization of a matrix by coloring its coefficients
 view_matrix = function(mat, xlab = "", ylab = "", legend_title = "Coefficient",
-                       bar_height = 10, font_size = 20, padding = 0)
+                       bar_height = 10, font_size = 20, padding = 0, pal = NULL)
 {
     mat = as.matrix(mat)
     lo = min(mat)
@@ -60,14 +61,16 @@ view_matrix = function(mat, xlab = "", ylab = "", legend_title = "Coefficient",
 
     # Map the color spectrum to [-r, r]
     ngrid = 1001
-    # col_pal = colorRampPalette(c("#67001F", "#B2182B", "#D6604D", "#F4A582",
-    #                              "#FDDBC7", "#FFFFFF", "#D1E5F0",
-    #                              "#92C5DE", "#4393C3", "#2166AC", "#053061"))(ngrid)
-    col_pal = colorRampPalette(c("#67000d", "#a50f15", "#cb181d", "#ef3b2c",
-                                 "#fb6a4a", "#fc9272", "#fcbba1", "#fee0d2",
-                                 "#ffffff",
-                                 "#deebf7", "#c6dbef", "#9ecae1", "#6baed6",
-                                 "#4292c6", "#2171b5", "#08519c", "#08306b"))(ngrid)
+    # pal = c("#67001F", "#B2182B", "#D6604D", "#F4A582",
+    #         "#FDDBC7", "#FFFFFF", "#D1E5F0",
+    #         "#92C5DE", "#4393C3", "#2166AC", "#053061")
+    if(is.null(pal))
+        pal = c("#67000d", "#a50f15", "#cb181d", "#ef3b2c",
+                "#fb6a4a", "#fc9272", "#fcbba1", "#fee0d2",
+                "#ffffff",
+                "#deebf7", "#c6dbef", "#9ecae1", "#6baed6",
+                "#4292c6", "#2171b5", "#08519c", "#08306b")
+    col_pal = colorRampPalette(pal)(ngrid)
 
     col_val = seq(-r, r, length.out = ngrid)
     lo_ind = findInterval(lo, col_val)
@@ -95,7 +98,7 @@ view_matrix = function(mat, xlab = "", ylab = "", legend_title = "Coefficient",
 view_evec = function(
     evecs,
     xlab = "Index of Variables", ylab = "Index of PCs", legend_title = "Factor\nLoading",
-    asp = 0.2, bar_height = 6, font_size = 20
+    asp = 0.2, bar_height = 6, font_size = 20, pal = NULL
 )
 {
     v = as.matrix(evecs)
@@ -113,14 +116,16 @@ view_evec = function(
 
     # Map the color spectrum to [-r, r]
     ngrid = 1001
-    # col_pal = colorRampPalette(c("#67001F", "#B2182B", "#D6604D", "#F4A582",
-    #                              "#FDDBC7", "#FFFFFF", "#D1E5F0",
-    #                              "#92C5DE", "#4393C3", "#2166AC", "#053061"))(ngrid)
-    col_pal = colorRampPalette(c("#67000d", "#a50f15", "#cb181d", "#ef3b2c",
-                                 "#fb6a4a", "#fc9272", "#fcbba1", "#fee0d2",
-                                 "#ffffff",
-                                 "#deebf7", "#c6dbef", "#9ecae1", "#6baed6",
-                                 "#4292c6", "#2171b5", "#08519c", "#08306b"))(ngrid)
+    # pal = c("#67001F", "#B2182B", "#D6604D", "#F4A582",
+    #         "#FDDBC7", "#FFFFFF", "#D1E5F0",
+    #         "#92C5DE", "#4393C3", "#2166AC", "#053061")
+    if(is.null(pal))
+        pal = c("#67000d", "#a50f15", "#cb181d", "#ef3b2c",
+                "#fb6a4a", "#fc9272", "#fcbba1", "#fee0d2",
+                "#ffffff",
+                "#deebf7", "#c6dbef", "#9ecae1", "#6baed6",
+                "#4292c6", "#2171b5", "#08519c", "#08306b")
+    col_pal = colorRampPalette(pal)(ngrid)
 
     col_val = seq(-r, r, length.out = ngrid)
     lo_ind = findInterval(lo, col_val)
